@@ -37,3 +37,13 @@ body {
   overflow: hidden;
   transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
 }
+
+@keyframes drinkBump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.45); color: #86efac; }
+  100% { transform: scale(1); }
+}
+.drink-bump {
+  animation: drinkBump 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  display: inline-block;
+}

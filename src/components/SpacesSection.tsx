@@ -30,7 +30,7 @@ export function SpacesSection({ isHomestretch, hasShield, onDrink, onUseShield, 
 
   return (
     <section className="px-4 py-4">
-      <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Casas</h2>
+      <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>Casas</h2>
       <div className="grid grid-cols-3 gap-2">
         {playableSpaces.map(space => (
           <button

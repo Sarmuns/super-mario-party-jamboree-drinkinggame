@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Character, GameState } from '../types';
 
 const STORAGE_KEY = 'smpj-game-state';
@@ -11,27 +11,46 @@ function loadState(): GameState {
   return { character: null, totalDrinks: 0, hasShield: false, isHomestretch: false };
 }
 
+function vibrate() {
+  try { navigator.vibrate?.(60); } catch {}
+}
+
 export function useGameState() {
   const [state, setState] = useState<GameState>(loadState);
+  const [canUndo, setCanUndo] = useState(false);
+  const prevRef = useRef<GameState | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  function snapshot(s: GameState) {
+    prevRef.current = s;
+    setCanUndo(true);
+  }
 
   const selectCharacter = useCallback((character: Character) => {
     setState(s => ({ ...s, character }));
   }, []);
 
   const addDrinks = useCallback((count: number) => {
-    setState(s => ({ ...s, totalDrinks: s.totalDrinks + count }));
+    vibrate();
+    setState(s => { snapshot(s); return { ...s, totalDrinks: s.totalDrinks + count }; });
   }, []);
 
   const activateShield = useCallback(() => {
-    setState(s => ({ ...s, hasShield: true }));
+    setState(s => { snapshot(s); return { ...s, hasShield: true }; });
   }, []);
 
   const useShield = useCallback(() => {
-    setState(s => ({ ...s, hasShield: false }));
+    setState(s => { snapshot(s); return { ...s, hasShield: false }; });
+  }, []);
+
+  const undo = useCallback(() => {
+    if (!prevRef.current) return;
+    setState(prevRef.current);
+    prevRef.current = null;
+    setCanUndo(false);
   }, []);
 
   const toggleHomestretch = useCallback(() => {
@@ -39,6 +58,8 @@ export function useGameState() {
   }, []);
 
   const resetGame = useCallback(() => {
+    prevRef.current = null;
+    setCanUndo(false);
     setState({ character: null, totalDrinks: 0, hasShield: false, isHomestretch: false });
   }, []);
 
@@ -48,10 +69,12 @@ export function useGameState() {
 
   return {
     state,
+    canUndo,
     selectCharacter,
     addDrinks,
     activateShield,
     useShield,
+    undo,
     toggleHomestretch,
     resetGame,
     goToCharacterSelect,

@@ -8,7 +8,7 @@ interface Props {
 export function DiceSection({ hasShield, isHomestretch, onRoll1, onRoll10 }: Props) {
   return (
     <section className="px-4 py-4">
-      <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Dado</h2>
+      <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>Dado</h2>
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={onRoll1}

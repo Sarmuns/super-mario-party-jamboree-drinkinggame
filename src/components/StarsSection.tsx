@@ -19,7 +19,7 @@ export function StarsSection({ isHomestretch, onDrink, showToast }: Props) {
 
   return (
     <section className="px-4 py-4">
-      <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Estrelas</h2>
+      <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>Estrelas</h2>
       <div className="flex flex-col gap-2">
         {starEvents.map(ev => {
           const count = isHomestretch ? ev.base * 2 : ev.base;

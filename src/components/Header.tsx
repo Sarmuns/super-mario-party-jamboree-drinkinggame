@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import type { Character } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
 
@@ -7,9 +7,11 @@ interface Props {
   totalDrinks: number;
   hasShield: boolean;
   isHomestretch: boolean;
+  canUndo: boolean;
   onUseShield: () => void;
   onToggleHomestretch: () => void;
   onReset: () => void;
+  onUndo: () => void;
 }
 
 export function Header({
@@ -17,17 +19,24 @@ export function Header({
   totalDrinks,
   hasShield,
   isHomestretch,
+  canUndo,
   onUseShield,
   onToggleHomestretch,
   onReset,
+  onUndo,
 }: Props) {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [animKey, setAnimKey] = useState(0);
+  const prevDrinks = useRef(totalDrinks);
+
+  useEffect(() => {
+    if (totalDrinks > prevDrinks.current) setAnimKey(k => k + 1);
+    prevDrinks.current = totalDrinks;
+  }, [totalDrinks]);
 
   function startLongPress() {
     longPressTimer.current = setTimeout(() => {
-      if (window.confirm('Resetar o jogo? Isso apaga tudo.')) {
-        onReset();
-      }
+      if (window.confirm('Resetar o jogo? Isso apaga tudo.')) onReset();
     }, 800);
   }
 
@@ -40,8 +49,12 @@ export function Header({
 
   return (
     <header
-      className="sticky top-0 z-40 border-b border-gray-700 px-4 py-3"
-      style={{ backgroundColor: isHomestretch ? '#1f0a0a' : '#111827' }}
+      className="sticky top-0 z-40 border-b px-4 py-3"
+      style={{
+        backgroundColor: isHomestretch ? '#1f0a0a' : '#111827',
+        borderBottomColor: `rgba(var(--accent-rgb) / 0.35)`,
+        boxShadow: `0 1px 20px rgba(var(--accent-rgb) / 0.1)`,
+      }}
     >
       <div className="flex items-center gap-3">
         {/* Avatar — long press to reset */}
@@ -55,20 +68,24 @@ export function Header({
           className="shrink-0 select-none"
           title="Segure para resetar"
         >
-          <ImageWithFallback
-            src={character.icon_url}
-            alt={character.name}
-            fallbackChar={character.name[0]}
-            fallbackColor={character.color}
-            className="w-10 h-10 rounded-full object-contain border-2"
-          />
+          <div className="rounded-full p-0.5" style={{ background: 'var(--accent)' }}>
+            <ImageWithFallback
+              src={character.icon_url}
+              alt={character.name}
+              fallbackChar={character.name[0]}
+              fallbackColor={character.color}
+              className="w-10 h-10 rounded-full object-contain bg-gray-900"
+            />
+          </div>
         </button>
 
         {/* Name + drink count */}
         <div className="flex-1 min-w-0">
           <div className="text-xs text-gray-400 leading-none">{character.name}</div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-white leading-tight">{totalDrinks}</span>
+            <span key={animKey} className="text-2xl font-bold leading-tight drink-bump" style={{ color: 'var(--accent)' }}>
+              {totalDrinks}
+            </span>
             <span className="text-xs text-gray-400">goles</span>
             {isHomestretch && (
               <span className="ml-1 text-xs font-bold text-red-400 bg-red-900/40 px-1.5 py-0.5 rounded-full">
@@ -78,6 +95,21 @@ export function Header({
           </div>
         </div>
 
+        {/* Undo button — always visible, dimmed when nothing to undo */}
+        <button
+          onClick={onUndo}
+          disabled={!canUndo}
+          className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 disabled:opacity-25"
+          style={{ color: '#9ca3af' }}
+          title="Desfazer última ação"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 14 4 9l5-5"/>
+            <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>
+          </svg>
+          <span>Undo</span>
+        </button>
+
         {/* Shield badge */}
         {hasShield && (
           <button
@@ -86,7 +118,6 @@ export function Header({
             title="Usar escudo"
           >
             <span>🛡️</span>
-            <span className="text-xs hidden sm:inline">Usar</span>
           </button>
         )}
 
@@ -108,16 +139,8 @@ export function Header({
           className="shrink-0 flex flex-col items-center gap-0.5"
           title="Últimos 5 turnos"
         >
-          <div
-            className={`relative w-10 h-6 rounded-full transition-colors duration-200 ${
-              isHomestretch ? 'bg-red-600' : 'bg-gray-600'
-            }`}
-          >
-            <div
-              className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${
-                isHomestretch ? 'left-5' : 'left-1'
-              }`}
-            />
+          <div className={`relative w-10 h-6 rounded-full transition-colors duration-200 ${isHomestretch ? 'bg-red-600' : 'bg-gray-600'}`}>
+            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isHomestretch ? 'left-5' : 'left-1'}`} />
           </div>
           <span className="text-[10px] text-gray-400 leading-none">5 turnos</span>
         </button>

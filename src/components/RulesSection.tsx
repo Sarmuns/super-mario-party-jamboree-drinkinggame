@@ -38,7 +38,7 @@ export function RulesSection() {
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">📋</span>
-          <span className="text-sm font-bold text-white">Regras de Mesa</span>
+          <span className="text-sm font-bold" style={{ color: 'var(--accent)' }}>Regras de Mesa</span>
           <span className="text-xs text-gray-500">(consulta)</span>
         </div>
         <span className="text-gray-400 text-lg transition-transform duration-200" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)' }}>
