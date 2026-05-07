@@ -27,7 +27,7 @@ export function SpaceModal({ space, isHomestretch, hasShield, onDrink, onUseShie
   }, [onClose]);
 
   const drinkCount = getDrinkCount(space, isHomestretch);
-  const isSpecialRule = typeof space.drinks !== 'number' || space.drinks === 'regra_minigame';
+  const isSpecialRule = typeof space.drinks !== 'number';
 
   function handleDrink() {
     if (drinkCount !== null && drinkCount > 0) {

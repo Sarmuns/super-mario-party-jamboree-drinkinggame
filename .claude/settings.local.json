@@ -20,7 +20,8 @@
       "Bash(node scripts/download-assets-stealth.mjs)",
       "PowerShell(Test-Path *)",
       "Bash(node scripts/download-assets-cdp.mjs)",
-      "Bash(node scripts/fix-spaces.mjs)"
+      "Bash(node scripts/fix-spaces.mjs)",
+      "Bash(npm run *)"
     ]
   }
 }
