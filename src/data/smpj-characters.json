@@ -1,0 +1,200 @@
+[
+  {
+    "id": "mario",
+    "name": "Mario",
+    "color": "#E24B4A",
+    "icon_url": "/assets/personagens/104px-SMPJ_Mario_Dice_Block.png",
+    "portrait_url": "/assets/personagens/104px-SMPJ_Mario_Dice_Block.png",
+    "is_buddy": true,
+    "unlockable": false
+  },
+  {
+    "id": "luigi",
+    "name": "Luigi",
+    "color": "#1D9E75",
+    "icon_url": "/assets/personagens/87px-SMPJ_Luigi.png",
+    "portrait_url": "/assets/personagens/87px-SMPJ_Luigi.png",
+    "is_buddy": true,
+    "unlockable": false
+  },
+  {
+    "id": "peach",
+    "name": "Peach",
+    "color": "#D4537E",
+    "icon_url": "/assets/personagens/83px-Peach_Posing_Alt_3D_Artwork.png",
+    "portrait_url": "/assets/personagens/83px-Peach_Posing_Alt_3D_Artwork.png",
+    "is_buddy": true,
+    "unlockable": false
+  },
+  {
+    "id": "daisy",
+    "name": "Daisy",
+    "color": "#EF9F27",
+    "icon_url": "/assets/personagens/77px-Daisy_Render_MP6_2.png",
+    "portrait_url": "/assets/personagens/77px-Daisy_Render_MP6_2.png",
+    "is_buddy": true,
+    "unlockable": false
+  },
+  {
+    "id": "wario",
+    "name": "Wario",
+    "color": "#BA7517",
+    "icon_url": "/assets/personagens/128px-Wario_MP100.png",
+    "portrait_url": "/assets/personagens/128px-Wario_MP100.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "waluigi",
+    "name": "Waluigi",
+    "color": "#7F77DD",
+    "icon_url": "/assets/personagens/105px-SuperMarioParty_Waluigi.png",
+    "portrait_url": "/assets/personagens/105px-SuperMarioParty_Waluigi.png",
+    "is_buddy": true,
+    "unlockable": false
+  },
+  {
+    "id": "rosalina",
+    "name": "Rosalina",
+    "color": "#85B7EB",
+    "icon_url": "/assets/personagens/87px-Rosalina-MPTop100-Transparent.png",
+    "portrait_url": "/assets/personagens/87px-Rosalina-MPTop100-Transparent.png",
+    "is_buddy": true,
+    "unlockable": false
+  },
+  {
+    "id": "yoshi",
+    "name": "Yoshi",
+    "color": "#639922",
+    "icon_url": "/assets/personagens/91px-SMPJ_Yoshi.png",
+    "portrait_url": "/assets/personagens/91px-SMPJ_Yoshi.png",
+    "is_buddy": true,
+    "unlockable": false
+  },
+  {
+    "id": "birdo",
+    "name": "Birdo",
+    "color": "#D4537E",
+    "icon_url": "/assets/personagens/105px-MP8_Birdo.png",
+    "portrait_url": "/assets/personagens/105px-MP8_Birdo.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "bowser",
+    "name": "Bowser",
+    "color": "#D85A30",
+    "icon_url": "/assets/personagens/137px-Bowser_-_Mario_Party_10.png",
+    "portrait_url": "/assets/personagens/137px-Bowser_-_Mario_Party_10.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "bowser_jr",
+    "name": "Bowser Jr.",
+    "color": "#EF9F27",
+    "icon_url": "/assets/personagens/133px-SMPBowserJr.png",
+    "portrait_url": "/assets/personagens/133px-SMPBowserJr.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "toad",
+    "name": "Toad",
+    "color": "#E24B4A",
+    "icon_url": "/assets/personagens/93px-MPS_Toad_Artwork.png",
+    "portrait_url": "/assets/personagens/93px-MPS_Toad_Artwork.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "toadette",
+    "name": "Toadette",
+    "color": "#D4537E",
+    "icon_url": "/assets/personagens/130px-Toadette_-_Mario_Party_10.png",
+    "portrait_url": "/assets/personagens/130px-Toadette_-_Mario_Party_10.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "spike",
+    "name": "Spike",
+    "color": "#1D9E75",
+    "icon_url": "/assets/personagens/137px-Spike_-_Mario_Party_10.png",
+    "portrait_url": "/assets/personagens/137px-Spike_-_Mario_Party_10.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "koopa",
+    "name": "Koopa Troopa",
+    "color": "#639922",
+    "icon_url": "/assets/personagens/118px-SuperMarioParty_KoopaTroopa.png",
+    "portrait_url": "/assets/personagens/118px-SuperMarioParty_KoopaTroopa.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "goomba",
+    "name": "Goomba",
+    "color": "#BA7517",
+    "icon_url": "/assets/personagens/123px-Goomba_-_Mario_Party_Superstars.png",
+    "portrait_url": "/assets/personagens/123px-Goomba_-_Mario_Party_Superstars.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "shy_guy",
+    "name": "Shy Guy",
+    "color": "#E24B4A",
+    "icon_url": "/assets/personagens/123px-MP9_Shy_Guy_Artwork.png",
+    "portrait_url": "/assets/personagens/123px-MP9_Shy_Guy_Artwork.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "boo",
+    "name": "Boo",
+    "color": "#B4B2A9",
+    "icon_url": "/assets/personagens/150px-NSMBW_Boo_Artwork.png",
+    "portrait_url": "/assets/personagens/150px-NSMBW_Boo_Artwork.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "monty_mole",
+    "name": "Monty Mole",
+    "color": "#854F0B",
+    "icon_url": "/assets/personagens/150px-Monty_Mole_SMP.png",
+    "portrait_url": "/assets/personagens/150px-Monty_Mole_SMP.png",
+    "is_buddy": false,
+    "unlockable": false
+  },
+  {
+    "id": "donkey_kong",
+    "name": "Donkey Kong",
+    "color": "#854F0B",
+    "icon_url": "/assets/personagens/132px-SuperMarioParty_DonkeyKong.png",
+    "portrait_url": "/assets/personagens/132px-SuperMarioParty_DonkeyKong.png",
+    "is_buddy": true,
+    "unlockable": false
+  },
+  {
+    "id": "ninji",
+    "name": "Ninji",
+    "color": "#534AB7",
+    "icon_url": "/assets/personagens/128px-Ninji_artwork_Play_Nintendo_2024.png",
+    "portrait_url": "/assets/personagens/128px-Ninji_artwork_Play_Nintendo_2024.png",
+    "is_buddy": false,
+    "unlockable": true
+  },
+  {
+    "id": "pauline",
+    "name": "Pauline",
+    "color": "#E24B4A",
+    "icon_url": "/assets/personagens/52px-MK8D_BCP_Pauline_artwork.png",
+    "portrait_url": "/assets/personagens/52px-MK8D_BCP_Pauline_artwork.png",
+    "is_buddy": false,
+    "unlockable": true
+  }
+]

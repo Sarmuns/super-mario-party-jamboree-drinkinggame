@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)",
+      "Bash(Start-Process \"npx\" -ArgumentList \"vite\",\"--port\",\"5173\" -NoNewWindow)",
+      "Bash(Start-Sleep 3)",
+      "Bash(Write-Output \"Server started\")",
+      "PowerShell(Out-Null *)",
+      "Bash(node scripts/download-assets.mjs)",
+      "Bash(rm \"C:\\\\Users\\\\sarmuns\\\\Desktop\\\\projetinhos\\\\Mario Party Drinking Game\\\\smpj-drinking-game\\\\public\\\\images\"/*.png)",
+      "Bash(curl -s -o /tmp/test.png -L --max-redirs 5 -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/124.0.0.0 Safari/537.36\" -H \"Accept: image/webp,image/apng,image/*,*/*;q=0.8\" -H \"Referer: https://www.mariowiki.com/\" \"https://mario.wiki.gallery/images/thumb/4/44/SMPJ_Character_Mario.png/120px-SMPJ_Character_Mario.png\")",
+      "Read(//tmp/**)",
+      "Bash(xxd)",
+      "Bash(curl -s -o /tmp/test2.png -L -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36\" \"https://mario.wiki.gallery/images/4/44/SMPJ_Character_Mario.png\")",
+      "Bash(curl -s \"https://www.mariowiki.com/api.php?action=query&titles=File:SMPJ_Character_Mario.png&prop=imageinfo&iiprop=url&format=json\")",
+      "Bash(curl -s -o /tmp/test3.png -L -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36\" \"https://www.mariowiki.com/images/thumb/4/44/SMPJ_Character_Mario.png/120px-SMPJ_Character_Mario.png\")",
+      "PowerShell($r = Invoke-WebRequest -Uri \"https://mario.wiki.gallery/images/thumb/4/44/SMPJ_Character_Mario.png/120px-SMPJ_Character_Mario.png\" -UserAgent \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36\" -Headers @{Referer=\"https://www.mariowiki.com/\"} -UseBasicParsing; $r.StatusCode; [System.Text.Encoding]::ASCII.GetString\\($r.Content[0..20]\\))",
+      "Bash(node scripts/download-assets-stealth.mjs)",
+      "PowerShell(Test-Path *)",
+      "Bash(node scripts/download-assets-cdp.mjs)",
+      "Bash(node scripts/fix-spaces.mjs)"
+    ]
+  }
+}

@@ -1,0 +1,376 @@
+{
+  "meta": {
+    "game": "Super Mario Party Jamboree",
+    "purpose": "Drinking Game - Dados para app responsivo",
+    "version": "v3",
+    "note": "Imagens do mario.wiki.gallery (CC BY-SA). Prefixo SMPJ_ é o padrão do wiki para assets do Jamboree."
+  },
+  "spaces": [
+    {
+      "id": "blue",
+      "name": "Blue Space",
+      "name_pt": "Casa Azul",
+      "color": "#378ADD",
+      "icon_url": "/assets/casas/64px-SMPJ_Blue_Space.png",
+      "sprite_url": "/assets/casas/64px-SMPJ_Blue_Space.png",
+      "effect_in_game": "Ganha 3 moedas (6 com Buddy, 6 nos últimos 5 turnos, 12 com Buddy nos últimos 5)",
+      "drinking_rule": "Safe. Nada pra beber.",
+      "drinks": 0
+    },
+    {
+      "id": "red",
+      "name": "Red Space",
+      "name_pt": "Casa Vermelha",
+      "color": "#E24B4A",
+      "icon_url": "/assets/casas/64px-SMPJ_Red_Space.png",
+      "sprite_url": "/assets/casas/64px-SMPJ_Red_Space.png",
+      "effect_in_game": "Perde 3 moedas",
+      "drinking_rule": "Perdeu moedas, paga com 1 gole.",
+      "drinks": 1
+    },
+    {
+      "id": "lucky",
+      "name": "Lucky Space",
+      "name_pt": "Casa da Sorte",
+      "color": "#1D9E75",
+      "icon_url": "/assets/casas/64px-SMPJ_Lucky_Space.png",
+      "sprite_url": "/assets/casas/64px-SMPJ_Lucky_Space.png",
+      "effect_in_game": "Roleta com prêmios: moedas, itens, Double Dice, etc.",
+      "drinking_rule": "Sorte! Todos os outros bebem 1 gole.",
+      "drinks": 0,
+      "drinks_others": 1
+    },
+    {
+      "id": "unlucky",
+      "name": "Unlucky Space",
+      "name_pt": "Casa do Azar",
+      "color": "#7F77DD",
+      "icon_url": "/assets/casas/64px-SMPJ_Unlucky_Space.png",
+      "sprite_url": "/assets/casas/64px-SMPJ_Unlucky_Space.png",
+      "effect_in_game": "Roleta com punições: Loadstones, perder moedas/itens, dar pro último lugar",
+      "drinking_rule": "Azar no jogo, azar no copo. 2 goles.",
+      "drinks": 2
+    },
+    {
+      "id": "event",
+      "name": "Event Space",
+      "name_pt": "Casa de Evento",
+      "color": "#BA7517",
+      "icon_url": "/assets/casas/64px-SMPJ_Event_Space.png",
+      "sprite_url": "/assets/casas/64px-SMPJ_Event_Space.png",
+      "effect_in_game": "Dispara evento exclusivo do tabuleiro (varia por board)",
+      "drinking_rule": "Evento disparou? 1 gole — o caos tem preço.",
+      "drinks": 1
+    },
+    {
+      "id": "item",
+      "name": "Item Space",
+      "name_pt": "Casa de Item",
+      "color": "#888780",
+      "icon_url": "/assets/casas/64px-SMPJ_Item_Space.png",
+      "sprite_url": "/assets/casas/64px-SMPJ_Item_Space.png",
+      "effect_in_game": "Minigame de item ou roleta pra ganhar item",
+      "drinking_rule": "Item bom? Nada. Caiu Loadstone? 1 gole.",
+      "drinks": 0,
+      "drinks_conditional": {
+        "condition": "Recebeu Loadstone",
+        "drinks": 1
+      }
+    },
+    {
+      "id": "bowser",
+      "name": "Bowser Space",
+      "name_pt": "Casa do Bowser",
+      "color": "#D85A30",
+      "icon_url": "/assets/casas/64px-SMPJ_Bowser_Space.png",
+      "sprite_url": "/assets/casas/64px-SMPJ_Bowser_Space.png",
+      "effect_in_game": "Impostor Bowser aparece: perder moedas, metade das moedas, estrela, Bowser Revolution, Bowser Minigame",
+      "drinking_rule": "Bowser não perdoa. 3 goles. Perdeu estrela? Vira o copo.",
+      "drinks": 3,
+      "drinks_conditional": {
+        "condition": "Perdeu estrela",
+        "drinks": "vira o copo"
+      }
+    },
+    {
+      "id": "chance_time",
+      "name": "Chance Time Space",
+      "name_pt": "Casa Chance Time",
+      "color": "#D4537E",
+      "icon_url": "assets/casas/64px-SMPJ_Chance_Time_Space.png",
+      "sprite_url": "assets/casas/64px-SMPJ_Chance_Time_Space.png",
+      "effect_in_game": "Roleta de troca: trocar moedas/estrelas entre jogadores",
+      "drinking_rule": "Todo mundo bebe 1 gole. Quem saiu prejudicado bebe +1.",
+      "drinks": 1,
+      "drinks_all": true,
+      "drinks_conditional": {
+        "condition": "Saiu prejudicado na troca",
+        "drinks": 1
+      }
+    },
+    {
+      "id": "vs",
+      "name": "VS Space",
+      "name_pt": "Casa VS",
+      "color": "#185FA5",
+      "icon_url": "assets/casas/64px-SMPJ_VS_Space.png",
+      "sprite_url": "assets/casas/64px-SMPJ_VS_Space.png",
+      "effect_in_game": "Todos apostam moedas e jogam um minigame. Vencedor leva tudo.",
+      "drinking_rule": "Minigame VS! Segue regra de minigames (todos bebem 1 antes, perdedor +1).",
+      "drinks": "regra_minigame"
+    },
+    {
+      "id": "start",
+      "name": "Start Space",
+      "name_pt": "Casa de Início",
+      "color": "#888780",
+      "icon_url": null,
+      "sprite_url": null,
+      "effect_in_game": "Ponto de partida do tabuleiro",
+      "drinking_rule": "Sem efeito.",
+      "drinks": 0
+    },
+    {
+      "id": "star_exchange",
+      "name": "Star Exchange",
+      "name_pt": "Troca de Estrela",
+      "color": "#EF9F27",
+      "icon_url": null,
+      "sprite_url": null,
+      "effect_in_game": "Local onde se compra estrela por 20 moedas",
+      "drinking_rule": "Se comprou estrela: todos os outros bebem 1 gole.",
+      "drinks": 0,
+      "drinks_others": 1
+    }
+  ],
+  "items": [
+    {
+      "id": "mushroom",
+      "name": "Mushroom",
+      "name_pt": "Cogumelo",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/6/6b/SMPJ_Mushroom.png/120px-SMPJ_Mushroom.png",
+      "effect": "Rola 2 dados",
+      "price": 3
+    },
+    {
+      "id": "double_dice",
+      "name": "Double Dice",
+      "name_pt": "Dado Duplo",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/1/16/SMPJ_Double_Dice.png/120px-SMPJ_Double_Dice.png",
+      "effect": "Rola 2 dados e soma",
+      "price": 5
+    },
+    {
+      "id": "custom_dice",
+      "name": "Custom Dice Block",
+      "name_pt": "Dado Customizado",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/6/68/SMPJ_Custom_Dice_Block.png/120px-SMPJ_Custom_Dice_Block.png",
+      "effect": "Escolhe o número do dado (1-6)",
+      "price": 3
+    },
+    {
+      "id": "creepy_dice",
+      "name": "Creepy Dice Block",
+      "name_pt": "Dado Sombrio",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/9/95/SMPJ_Creepy_Dice_Block.png/120px-SMPJ_Creepy_Dice_Block.png",
+      "effect": "Rola dado com números de 1-5, aumenta chance de numeros baixos",
+      "price": 3
+    },
+    {
+      "id": "pipe",
+      "name": "Pipe",
+      "name_pt": "Cano",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/0/0c/SMPJ_Pipe.png/120px-SMPJ_Pipe.png",
+      "effect": "Troca de posição com outro jogador",
+      "price": 5
+    },
+    {
+      "id": "warp_box",
+      "name": "Warp Box",
+      "name_pt": "Caixa de Teletransporte",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/b/bc/SMPJ_Warp_Box.png/120px-SMPJ_Warp_Box.png",
+      "effect": "Teleporta pra perto da estrela",
+      "price": 7
+    },
+    {
+      "id": "skeleton_key",
+      "name": "Skeleton Key",
+      "name_pt": "Chave Esqueleto",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/3/3a/SMPJ_Skeleton_Key.png/120px-SMPJ_Skeleton_Key.png",
+      "effect": "Abre portão trancado no tabuleiro",
+      "price": 3
+    },
+    {
+      "id": "chomp_call",
+      "name": "Chomp Call",
+      "name_pt": "Chamada do Chomp",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/3/3d/SMPJ_Chomp_Call.png/120px-SMPJ_Chomp_Call.png",
+      "effect": "Move a estrela pra outro local",
+      "price": 7
+    },
+    {
+      "id": "cellular_shopper",
+      "name": "Cellular Shopper",
+      "name_pt": "Compra por Celular",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/1/12/SMPJ_Cellular_Shopper.png/120px-SMPJ_Cellular_Shopper.png",
+      "effect": "Compra item da loja remotamente",
+      "price": 3
+    },
+    {
+      "id": "steal_trap",
+      "name": "10-Coin Steal Trap",
+      "name_pt": "Armadilha de 10 Moedas",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/1/13/SMPJ_10-Coin_Steal_Trap.png/120px-SMPJ_10-Coin_Steal_Trap.png",
+      "effect": "Coloca armadilha numa casa — próximo jogador que passar perde 10 moedas",
+      "price": 5
+    },
+    {
+      "id": "swap_mirror",
+      "name": "Swap Mirror",
+      "name_pt": "Espelho de Troca",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/e/e5/SMPJ_Swap_Mirror.png/120px-SMPJ_Swap_Mirror.png",
+      "effect": "Troca itens com outro jogador",
+      "price": 3
+    },
+    {
+      "id": "loadstone",
+      "name": "Loadstone",
+      "name_pt": "Pedra Pesada",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/d/d2/SMPJ_Loadstone.png/120px-SMPJ_Loadstone.png",
+      "effect": "Item ruim — ocupa slot de item. Obtido de Unlucky Space ou Bowser.",
+      "price": null,
+      "is_bad_item": true
+    },
+    {
+      "id": "item_bag",
+      "name": "Item Bag",
+      "name_pt": "Bolsa de Itens",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/5/54/SMPJ_Item_Bag.png/120px-SMPJ_Item_Bag.png",
+      "effect": "Ganha 3 itens aleatórios de uma vez",
+      "price": null
+    },
+    {
+      "id": "golden_pipe",
+      "name": "Golden Pipe",
+      "name_pt": "Cano Dourado",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/f/f3/SMPJ_Golden_Pipe.png/120px-SMPJ_Golden_Pipe.png",
+      "effect": "Teleporta direto pra estrela",
+      "price": 15
+    },
+    {
+      "id": "boo_bell",
+      "name": "Boo Bell",
+      "name_pt": "Sino do Boo",
+      "icon_url": "https://mario.wiki.gallery/images/thumb/6/62/SMPJ_Boo_Bell.png/120px-SMPJ_Boo_Bell.png",
+      "effect": "Invoca Boo pra roubar moedas/estrela de outro jogador",
+      "price": 7
+    }
+  ],
+  "dice_rules": {
+    "roll_1": {
+      "name": "Escudo",
+      "emoji": "🛡️",
+      "rule": "Tirou 1? Ganha um escudo — pula a próxima dose que vier (casa, minigame, o que for). Não acumula.",
+      "icon_suggestion": "shield"
+    },
+    "roll_10": {
+      "name": "Imposto da sorte",
+      "emoji": "🎰",
+      "rule": "Tirou 10? Bebe 1 dose na hora. Sorte demais tem preço.",
+      "drinks": 1,
+      "icon_suggestion": "coin"
+    }
+  },
+  "minigame_rules": {
+    "universal": "Antes de começar, todo mundo bebe 1 gole.",
+    "ffa_4p": {
+      "name": "4 jogadores (FFA)",
+      "loser_rule": "Último lugar bebe +1 gole"
+    },
+    "team_2v2": {
+      "name": "2v2",
+      "loser_rule": "Dupla perdedora bebe +1 gole cada"
+    },
+    "team_1v3": {
+      "name": "1v3",
+      "loser_rule": "Lado perdedor bebe +1 gole (cada, se trio)"
+    },
+    "note": "Regra de mesa, não registrável no app. Apenas para consulta."
+  },
+  "star_rules": [
+    {
+      "event": "Comprei estrela",
+      "emoji": "⭐",
+      "rule": "Bebe 2 goles",
+      "drinks": 2
+    },
+    {
+      "event": "Estrela roubada",
+      "emoji": "💀",
+      "rule": "Bebe 3 goles",
+      "drinks": 3
+    },
+    {
+      "event": "Passei sem grana",
+      "emoji": "😭",
+      "rule": "Bebe 4 goles — a maior humilhação",
+      "drinks": 4
+    }
+  ],
+  "homestretch_rule": {
+    "name": "Últimos 5 turnos — tudo dobra!",
+    "description": "Quando o jogo anuncia os últimos 5 turnos, todas as punições de goles dobram. Red space vira 2, Bowser vira 6, imposto do dado 10 vira 2 doses. O escudo do dado 1 continua bloqueando apenas 1 dose."
+  },
+  "boards": [
+    {
+      "id": "wiggler",
+      "name": "Mega Wiggler's Tree Party",
+      "unlocked": true,
+      "difficulty": 1
+    },
+    {
+      "id": "raceway",
+      "name": "Roll 'em Raceway",
+      "unlocked": true,
+      "difficulty": 2
+    },
+    {
+      "id": "lagoon",
+      "name": "Goomba Lagoon",
+      "unlocked": true,
+      "difficulty": 2
+    },
+    {
+      "id": "galleria",
+      "name": "Rainbow Galleria",
+      "unlocked": true,
+      "difficulty": 3
+    },
+    {
+      "id": "western",
+      "name": "Western Land",
+      "unlocked": false,
+      "unlock": "Silver Player Rank (level 10)",
+      "difficulty": 2
+    },
+    {
+      "id": "rainbow_castle",
+      "name": "Mario's Rainbow Castle",
+      "unlocked": false,
+      "unlock": "Gold Player Rank (level 20)",
+      "difficulty": 1
+    },
+    {
+      "id": "bowser_keep",
+      "name": "King Bowser's Keep",
+      "unlocked": false,
+      "unlock": "Completing story/progression",
+      "difficulty": 3
+    }
+  ],
+  "image_sources": {
+    "base_url": "https://mario.wiki.gallery/images/",
+    "license": "CC BY-SA 4.0 — Super Mario Wiki",
+    "note": "Imagens com prefixo SMPJ_ são assets específicos do Super Mario Party Jamboree. As URLs thumb/X/XX/filename.png/120px-filename.png geram thumbnails de 120px. Trocar '120px' por '64px', '200px', etc. pra redimensionar."
+  }
+}
