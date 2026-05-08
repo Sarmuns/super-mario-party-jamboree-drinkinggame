@@ -31,6 +31,9 @@ export interface GameState {
   totalDrinks: number;
   hasShield: boolean;
   isHomestretch: boolean;
+  isJamboree: boolean;
+  stars: number;
+  turn: number;
 }
 
 export interface ToastMessage {

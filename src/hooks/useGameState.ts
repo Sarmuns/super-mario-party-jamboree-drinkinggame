@@ -8,7 +8,7 @@ function loadState(): GameState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return { character: null, totalDrinks: 0, hasShield: false, isHomestretch: false };
+  return { character: null, totalDrinks: 0, hasShield: false, isHomestretch: false, isJamboree: false, stars: 0, turn: 1 };
 }
 
 function vibrate() {
@@ -57,10 +57,22 @@ export function useGameState() {
     setState(s => ({ ...s, isHomestretch: !s.isHomestretch }));
   }, []);
 
+  const toggleJamboree = useCallback(() => {
+    setState(s => ({ ...s, isJamboree: !s.isJamboree }));
+  }, []);
+
+  const addStars = useCallback((delta: number) => {
+    setState(s => { snapshot(s); return { ...s, stars: s.stars + delta }; });
+  }, []);
+
+  const incrementTurn = useCallback(() => {
+    setState(s => ({ ...s, turn: s.turn + 1 }));
+  }, []);
+
   const resetGame = useCallback(() => {
     prevRef.current = null;
     setCanUndo(false);
-    setState({ character: null, totalDrinks: 0, hasShield: false, isHomestretch: false });
+    setState({ character: null, totalDrinks: 0, hasShield: false, isHomestretch: false, isJamboree: false, stars: 0, turn: 1 });
   }, []);
 
   const goToCharacterSelect = useCallback(() => {
@@ -76,6 +88,9 @@ export function useGameState() {
     useShield,
     undo,
     toggleHomestretch,
+    toggleJamboree,
+    addStars,
+    incrementTurn,
     resetGame,
     goToCharacterSelect,
   };

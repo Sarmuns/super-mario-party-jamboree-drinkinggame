@@ -7,23 +7,22 @@ interface Props {
   totalDrinks: number;
   hasShield: boolean;
   isHomestretch: boolean;
+  isJamboree: boolean;
+  stars: number;
+  turn: number;
   canUndo: boolean;
   onUseShield: () => void;
   onToggleHomestretch: () => void;
+  onToggleJamboree: () => void;
   onReset: () => void;
   onUndo: () => void;
+  onAddOne: () => void;
 }
 
 export function Header({
-  character,
-  totalDrinks,
-  hasShield,
-  isHomestretch,
-  canUndo,
-  onUseShield,
-  onToggleHomestretch,
-  onReset,
-  onUndo,
+  character, totalDrinks, hasShield, isHomestretch, isJamboree,
+  stars, turn, canUndo,
+  onUseShield, onToggleHomestretch, onToggleJamboree, onReset, onUndo, onAddOne,
 }: Props) {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [animKey, setAnimKey] = useState(0);
@@ -39,110 +38,107 @@ export function Header({
       if (window.confirm('Resetar o jogo? Isso apaga tudo.')) onReset();
     }, 800);
   }
-
   function cancelLongPress() {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
   }
+
+  const multiplier = (isHomestretch ? 2 : 1) * (isJamboree ? 2 : 1);
 
   return (
     <header
-      className="sticky top-0 z-40 border-b px-4 py-3"
+      className="sticky top-0 z-40 border-b px-4 py-3 space-y-2"
       style={{
         backgroundColor: isHomestretch ? '#1f0a0a' : '#111827',
         borderBottomColor: `rgba(var(--accent-rgb) / 0.35)`,
         boxShadow: `0 1px 20px rgba(var(--accent-rgb) / 0.1)`,
       }}
     >
+      {/* Row 1: avatar, name/stars/turn, actions */}
       <div className="flex items-center gap-3">
-        {/* Avatar — long press to reset */}
         <button
-          onMouseDown={startLongPress}
-          onMouseUp={cancelLongPress}
-          onMouseLeave={cancelLongPress}
-          onTouchStart={startLongPress}
-          onTouchEnd={cancelLongPress}
-          onTouchCancel={cancelLongPress}
-          className="shrink-0 select-none"
-          title="Segure para resetar"
+          onMouseDown={startLongPress} onMouseUp={cancelLongPress}
+          onMouseLeave={cancelLongPress} onTouchStart={startLongPress}
+          onTouchEnd={cancelLongPress} onTouchCancel={cancelLongPress}
+          className="shrink-0 select-none" title="Segure para resetar"
         >
           <div className="rounded-full p-0.5" style={{ background: 'var(--accent)' }}>
             <ImageWithFallback
-              src={character.icon_url}
-              alt={character.name}
-              fallbackChar={character.name[0]}
-              fallbackColor={character.color}
-              className="w-10 h-10 rounded-full object-contain bg-gray-900"
+              src={character.icon_url} alt={character.name}
+              fallbackChar={character.name[0]} fallbackColor={character.color}
+              className="w-9 h-9 rounded-full object-contain bg-gray-900"
             />
           </div>
         </button>
 
-        {/* Name + drink count */}
         <div className="flex-1 min-w-0">
-          <div className="text-xs text-gray-400 leading-none">{character.name}</div>
-          <div className="flex items-baseline gap-1">
-            <span key={animKey} className="text-2xl font-bold leading-tight drink-bump" style={{ color: 'var(--accent)' }}>
-              {totalDrinks}
-            </span>
-            <span className="text-xs text-gray-400">goles</span>
-            {isHomestretch && (
-              <span className="ml-1 text-xs font-bold text-red-400 bg-red-900/40 px-1.5 py-0.5 rounded-full">
-                2x
-              </span>
-            )}
+          <div className="text-xs font-semibold text-white leading-none truncate">{character.name}</div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-yellow-400">⭐ {stars}</span>
+            <span className="text-gray-600 text-xs">•</span>
+            <span className="text-xs text-gray-400">Turno {turn}</span>
           </div>
         </div>
 
-        {/* Undo button — always visible, dimmed when nothing to undo */}
-        <button
-          onClick={onUndo}
-          disabled={!canUndo}
-          className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 disabled:opacity-25"
-          style={{ color: '#9ca3af' }}
-          title="Desfazer última ação"
-        >
+        {hasShield && (
+          <button onClick={onUseShield}
+            className="shrink-0 px-2.5 py-1.5 rounded-xl border border-yellow-500/50 bg-yellow-500/20 text-yellow-400 text-sm active:scale-95 transition-transform"
+            title="Usar escudo">🛡️</button>
+        )}
+
+        <button onClick={onUndo} disabled={!canUndo}
+          className="shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 disabled:opacity-25 text-gray-400"
+          title="Desfazer">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 14 4 9l5-5"/>
-            <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>
+            <path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>
           </svg>
           <span>Undo</span>
         </button>
 
-        {/* Shield badge */}
-        {hasShield && (
-          <button
-            onClick={onUseShield}
-            className="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border border-yellow-500/50 bg-yellow-500/20 text-yellow-400 text-sm font-semibold active:scale-95 transition-transform"
-            title="Usar escudo"
-          >
-            <span>🛡️</span>
-          </button>
+        <button onClick={() => { if (window.confirm('Resetar o jogo? Isso apaga tudo.')) onReset(); }}
+          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:text-gray-300 active:scale-95 transition-all"
+          title="Resetar jogo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Row 2: drink counter + toggles */}
+      <div className="flex items-center gap-3">
+        {/* Drink counter + +1 */}
+        <div className="flex items-center gap-2">
+          <span key={animKey} className="text-3xl font-black leading-none drink-bump" style={{ color: 'var(--accent)' }}>
+            {totalDrinks}
+          </span>
+          <span className="text-xs text-gray-400">goles</span>
+          <button onClick={onAddOne}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold border border-gray-600 text-gray-300 active:scale-95 transition-transform bg-gray-800"
+            title="+1 gole">+1</button>
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Multiplier badge */}
+        {multiplier > 1 && (
+          <span className="text-xs font-bold text-red-400 bg-red-900/40 px-1.5 py-0.5 rounded-full">
+            {multiplier}x
+          </span>
         )}
 
-        {/* Reset button */}
-        <button
-          onClick={() => { if (window.confirm('Resetar o jogo? Isso apaga tudo.')) onReset(); }}
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-gray-300 active:scale-95 transition-all"
-          title="Resetar jogo"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-            <path d="M3 3v5h5"/>
-          </svg>
+        {/* Jamboree toggle */}
+        <button onClick={onToggleJamboree} className="shrink-0 flex flex-col items-center gap-0.5" title="Jamboree Buddy">
+          <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isJamboree ? 'bg-yellow-500' : 'bg-gray-600'}`}>
+            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isJamboree ? 'left-4' : 'left-0.5'}`} />
+          </div>
+          <span className="text-[9px] text-gray-400 leading-none">Jamboree</span>
         </button>
 
         {/* Homestretch toggle */}
-        <button
-          onClick={onToggleHomestretch}
-          className="shrink-0 flex flex-col items-center gap-0.5"
-          title="Últimos 5 turnos"
-        >
-          <div className={`relative w-10 h-6 rounded-full transition-colors duration-200 ${isHomestretch ? 'bg-red-600' : 'bg-gray-600'}`}>
-            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isHomestretch ? 'left-5' : 'left-1'}`} />
+        <button onClick={onToggleHomestretch} className="shrink-0 flex flex-col items-center gap-0.5" title="Últimos 5 turnos">
+          <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isHomestretch ? 'bg-red-600' : 'bg-gray-600'}`}>
+            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isHomestretch ? 'left-4' : 'left-0.5'}`} />
           </div>
-          <span className="text-[10px] text-gray-400 leading-none">5 turnos</span>
+          <span className="text-[9px] text-gray-400 leading-none">5 turnos</span>
         </button>
       </div>
     </header>

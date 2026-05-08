@@ -7,26 +7,24 @@ import { ToastContainer } from './components/Toast';
 import type { Character } from './types';
 
 function App() {
-  const { state, canUndo, selectCharacter, addDrinks, activateShield, useShield, undo, toggleHomestretch, resetGame } = useGameState();
+  const {
+    state, canUndo,
+    selectCharacter, addDrinks, activateShield, useShield, undo,
+    toggleHomestretch, toggleJamboree, addStars, incrementTurn,
+    resetGame,
+  } = useGameState();
   const { toasts, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     const color = state.character?.color ?? '#6366f1';
     document.documentElement.style.setProperty('--accent', color);
-    // subtle rgb version for backgrounds
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
     document.documentElement.style.setProperty('--accent-rgb', `${r} ${g} ${b}`);
   }, [state.character?.color]);
 
-  function handleStart(character: Character) {
-    selectCharacter(character);
-  }
-
-  function handleReset() {
-    resetGame();
-  }
+  function handleStart(character: Character) { selectCharacter(character); }
 
   return (
     <>
@@ -38,13 +36,19 @@ function App() {
           totalDrinks={state.totalDrinks}
           hasShield={state.hasShield}
           isHomestretch={state.isHomestretch}
+          isJamboree={state.isJamboree}
+          stars={state.stars}
+          turn={state.turn}
           canUndo={canUndo}
           onDrink={addDrinks}
           onActivateShield={activateShield}
           onUseShield={useShield}
           onUndo={undo}
           onToggleHomestretch={toggleHomestretch}
-          onReset={handleReset}
+          onToggleJamboree={toggleJamboree}
+          onAddStars={addStars}
+          onIncrementTurn={incrementTurn}
+          onReset={resetGame}
           showToast={showToast}
         />
       ) : (
