@@ -47,6 +47,7 @@ export interface RoomPlayer {
   characterId: string;
   characterColor: string;
   characterIcon: string;
+  characterPortrait: string;
   totalDrinks: number;
   stars: number;
   hasShield: boolean;

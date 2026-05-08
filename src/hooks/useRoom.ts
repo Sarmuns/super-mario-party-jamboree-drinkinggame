@@ -9,6 +9,7 @@ const PLACEHOLDER: Omit<RoomPlayer, 'playerId' | 'isHost' | 'joinedAt'> = {
   characterId: '',
   characterColor: '#374151',
   characterIcon: '',
+  characterPortrait: '',
   totalDrinks: 0,
   stars: 0,
   hasShield: false,
@@ -134,6 +135,7 @@ export function useRoom() {
       characterId: character.id,
       characterColor: character.color,
       characterIcon: character.icon_url,
+      characterPortrait: character.portrait_url,
     };
     await trackPlayer(channelRef.current, updated);
   }, []);

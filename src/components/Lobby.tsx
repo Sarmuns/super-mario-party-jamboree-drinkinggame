@@ -39,7 +39,7 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
               className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gray-800 border border-gray-700">
               <div className="rounded-full p-0.5 shrink-0" style={{ background: p.characterColor }}>
                 <ImageWithFallback
-                  src={p.characterIcon} alt={p.name}
+                  src={p.characterPortrait || p.characterIcon} alt={p.name}
                   fallbackChar={(p.name || '?')[0]} fallbackColor={p.characterColor}
                   className="w-10 h-10 rounded-full object-contain bg-gray-900"
                 />

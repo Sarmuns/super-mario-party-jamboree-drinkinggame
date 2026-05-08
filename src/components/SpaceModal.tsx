@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { Space, RoomEvent } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
 
@@ -15,66 +15,121 @@ interface Props {
   onBroadcast?: (event: RoomEvent) => void;
 }
 
+// Casas com efeito coletivo (afetam outros jogadores)
+function isCollective(space: Space) {
+  return !!space.drinks_all || space.drinks_others !== undefined;
+}
+
 export function SpaceModal({
   space, multiplier, hasShield,
   characterName, roomPlayerId, isRoomMode,
   onDrink, onUseShield, onClose, onBroadcast,
 }: Props) {
+  const [step, setStep] = useState<'main' | 'prejudicado'>('main');
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Quanto EU bebo
+  // Quanto EU bebo (apenas para eventos pessoais ou drinks_all)
   const selfBase = typeof space.drinks === 'number' ? space.drinks : 0;
   const selfDrinks = selfBase * multiplier;
 
   // Quanto OS OUTROS bebem
-  const othersBase = space.drinks_others ?? (space.drinks_all && selfBase > 0 ? selfBase : 0);
-  const othersDrinks = typeof othersBase === 'number' ? othersBase * multiplier : 0;
+  const othersDrinks = (space.drinks_others ?? 0) * multiplier;
 
-  // É evento especial (VS Space etc.)
+  // É VS Space (regra especial)
   const isSpecialRule = typeof space.drinks === 'string';
 
+  // Bônus condicional (ex: Chance Time prejudicado, Bowser perdeu estrela)
+  const conditional = space.drinks_conditional;
+  const conditionalIsNumeric = typeof conditional?.drinks === 'number';
+
+  // Apenas Lucky Space e Chance Time têm broadcast (afetam outros)
+  const hasCollectiveEffect = isCollective(space);
+  const notifiesOthers = isRoomMode && hasCollectiveEffect && !!onBroadcast;
+
   function fireBroadcast() {
-    if (!onBroadcast || !characterName) return;
-    const type = space.drinks_all ? 'drinks_all' : 'drinks_others';
-    const drinks = space.drinks_all
-      ? selfBase  // all drink the same base amount
-      : (space.drinks_others ?? 1);
+    if (!onBroadcast || !characterName || !hasCollectiveEffect) return;
+    const othersBase = space.drinks_others ?? (space.drinks_all ? selfBase : 0);
     onBroadcast({
-      type,
+      type: space.drinks_all ? 'drinks_all' : 'drinks_others',
       fromPlayerId: roomPlayerId ?? '',
       fromPlayerName: characterName,
       message: `${characterName} caiu na ${space.name_pt}!`,
-      drinks,
+      drinks: typeof othersBase === 'number' ? othersBase : 1,
     });
   }
 
   function handleConfirm() {
     if (selfDrinks > 0) onDrink(selfDrinks);
     fireBroadcast();
+    // Chance Time: perguntar se saiu prejudicado
+    if (space.id === 'chance_time') {
+      setStep('prejudicado');
+      return;
+    }
     onClose();
   }
 
   function handleShield() {
     onUseShield();
-    fireBroadcast(); // outros ainda bebem mesmo se usar escudo
+    // Se evento coletivo, os outros ainda bebem mesmo com escudo
+    fireBroadcast();
     onClose();
   }
 
-  const hasCollectiveEffect = !!space.drinks_all || space.drinks_others !== undefined;
-  const notifiesOthers = isRoomMode && hasCollectiveEffect && !!onBroadcast;
-
-  // Texto do botão de confirmação
-  function confirmLabel() {
-    if (selfDrinks > 0 && notifiesOthers) return `Beber ${selfDrinks} e notificar sala 🔔`;
-    if (selfDrinks > 0) return `Beber! 🍺 (${selfDrinks} gole${selfDrinks !== 1 ? 's' : ''})`;
-    if (notifiesOthers) return `Confirmar — notificar outros 🔔`;
-    return 'Confirmar';
+  function handlePrejudicado(foi: boolean) {
+    if (foi && conditionalIsNumeric) {
+      onDrink((conditional!.drinks as number) * multiplier);
+    }
+    onClose();
   }
 
+  // ── Step: prejudicado (Chance Time follow-up) ──
+  if (step === 'prejudicado') {
+    const extraDrinks = conditionalIsNumeric ? (conditional!.drinks as number) * multiplier : 1;
+    return (
+      <>
+        <div className="fixed inset-0 z-40 bg-black/70" />
+        <div className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-center md:justify-center md:p-4">
+          <div className="bg-gray-800 rounded-t-3xl md:rounded-3xl w-full md:max-w-md shadow-2xl"
+            style={{ borderTop: `3px solid ${space.color}` }}>
+            <div className="flex justify-center pt-3 pb-1 md:hidden">
+              <div className="w-10 h-1 rounded-full bg-gray-600" />
+            </div>
+            <div className="px-5 pb-6 pt-4 space-y-4">
+              <div className="text-center">
+                <div className="text-3xl mb-2">🎲</div>
+                <div className="text-lg font-bold text-white">Chance Time</div>
+                <div className="text-sm text-gray-400 mt-1">{conditional?.condition}</div>
+              </div>
+              <div className="rounded-2xl bg-gray-700/50 px-4 py-3 text-center">
+                <div className="text-sm text-gray-300">Você saiu prejudicado na troca?</div>
+                <div className="text-xs text-gray-500 mt-1">Se sim, bebe mais {extraDrinks} gole{extraDrinks !== 1 ? 's' : ''}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => handlePrejudicado(true)}
+                  className="py-4 rounded-2xl text-sm font-bold border-2 border-red-500/60 bg-red-900/20 text-red-400 active:scale-95 transition-transform">
+                  😖 Sim, tomei no c*
+                  <div className="text-xs mt-0.5 font-normal">+{extraDrinks} gole{extraDrinks !== 1 ? 's' : ''}</div>
+                </button>
+                <button onClick={() => handlePrejudicado(false)}
+                  className="py-4 rounded-2xl text-sm font-bold border-2 border-green-500/60 bg-green-900/20 text-green-400 active:scale-95 transition-transform">
+                  😊 Saí bem
+                  <div className="text-xs mt-0.5 font-normal">sem extra</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Step: main ──
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/70" onClick={onClose} />
@@ -116,21 +171,9 @@ export function SpaceModal({
                 Regra do Drinking Game
               </div>
               <div className="text-base font-semibold text-white">{space.drinking_rule}</div>
-
-              {space.drinks_conditional && (
-                <div className="mt-2 text-sm text-gray-300">
-                  <span className="text-yellow-400">Condicional:</span>{' '}
-                  {space.drinks_conditional.condition} →{' '}
-                  <span className="font-bold text-white">
-                    {typeof space.drinks_conditional.drinks === 'number'
-                      ? `${(space.drinks_conditional.drinks as number) * multiplier} goles`
-                      : space.drinks_conditional.drinks}
-                  </span>
-                </div>
-              )}
             </div>
 
-            {/* Consequências explícitas */}
+            {/* Consequências */}
             {!isSpecialRule && (selfDrinks > 0 || othersDrinks > 0) && (
               <div className="rounded-2xl bg-gray-700/50 p-4 space-y-3">
                 <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">Consequências</div>
@@ -138,20 +181,16 @@ export function SpaceModal({
                 {selfDrinks > 0 && (
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🍺</span>
-                    <div className="flex-1">
-                      <div className="text-sm font-bold text-white">Você bebe</div>
-                    </div>
+                    <div className="flex-1 text-sm font-bold text-white">Você bebe</div>
                     <div className="text-right">
                       <span className="text-2xl font-black text-white">{selfDrinks}</span>
                       <span className="text-xs text-gray-400 ml-1">gole{selfDrinks !== 1 ? 's' : ''}</span>
-                      {multiplier > 1 && (
-                        <span className="ml-1 text-xs text-red-400 bg-red-900/40 px-1 py-0.5 rounded-full font-bold">{multiplier}x</span>
-                      )}
+                      {multiplier > 1 && <span className="ml-1 text-xs text-red-400 bg-red-900/40 px-1 py-0.5 rounded-full font-bold">{multiplier}x</span>}
                     </div>
                   </div>
                 )}
 
-                {selfDrinks === 0 && (space.drinks_all === undefined || !space.drinks_all) && (
+                {selfDrinks === 0 && !space.drinks_all && (
                   <div className="flex items-center gap-3">
                     <span className="text-xl">✅</span>
                     <div className="text-sm text-gray-400">Você não bebe</div>
@@ -165,14 +204,19 @@ export function SpaceModal({
                       <div className="text-sm font-bold text-white">
                         {space.drinks_all ? 'Todo mundo bebe' : 'Os outros bebem'}
                       </div>
-                      {notifiesOthers && (
-                        <div className="text-xs text-yellow-400">🔔 Eles vão receber uma notificação</div>
-                      )}
+                      {notifiesOthers && <div className="text-xs text-yellow-400">🔔 Eles vão receber uma notificação</div>}
                     </div>
                     <div className="text-right">
                       <span className="text-2xl font-black text-white">{othersDrinks}</span>
                       <span className="text-xs text-gray-400 ml-1">gole{othersDrinks !== 1 ? 's' : ''}</span>
                     </div>
+                  </div>
+                )}
+
+                {conditionalIsNumeric && (
+                  <div className="pt-2 border-t border-gray-600 text-xs text-yellow-400">
+                    + {conditional!.condition}: bebe mais {(conditional!.drinks as number) * multiplier} gole{(conditional!.drinks as number) * multiplier !== 1 ? 's' : ''}
+                    {space.id === 'chance_time' ? ' (vai perguntar depois)' : ''}
                   </div>
                 )}
               </div>
@@ -187,24 +231,23 @@ export function SpaceModal({
 
             {/* Botões */}
             <div className="flex flex-col gap-3">
-              {/* Escudo (só para espaços que EU bebo) */}
               {hasShield && selfDrinks > 0 && (
                 <button onClick={handleShield}
                   className="w-full py-4 rounded-2xl text-base font-bold text-yellow-400 border-2 border-yellow-500/60 bg-yellow-500/10 active:scale-95 transition-transform">
-                  Usar escudo 🛡️ — {notifiesOthers ? 'Pulei, mas vou notificar os outros' : 'Dose pulada!'}
+                  Usar escudo 🛡️ — {notifiesOthers && othersDrinks > 0 ? 'Pulei, mas vou notificar os outros' : 'Dose pulada!'}
                 </button>
               )}
 
-              {/* Botão principal de confirmação */}
               {!isSpecialRule && (selfDrinks > 0 || hasCollectiveEffect) && (
                 <button onClick={handleConfirm}
                   className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
                   style={{ backgroundColor: space.color }}>
-                  {confirmLabel()}
+                  {selfDrinks > 0 && notifiesOthers ? `Beber ${selfDrinks} e notificar sala 🔔` :
+                   selfDrinks > 0 ? `Beber! 🍺 (${selfDrinks} gole${selfDrinks !== 1 ? 's' : ''})` :
+                   notifiesOthers ? 'Confirmar — notificar outros 🔔' : 'Confirmar'}
                 </button>
               )}
 
-              {/* Fechar (sem consequência) */}
               {(isSpecialRule || (selfDrinks === 0 && !hasCollectiveEffect)) && (
                 <button onClick={onClose}
                   className="w-full py-4 rounded-2xl text-base font-bold text-white bg-gray-700 active:scale-95 transition-transform">
