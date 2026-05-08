@@ -40,3 +40,26 @@ export interface ToastMessage {
   id: number;
   message: string;
 }
+
+export interface RoomPlayer {
+  playerId: string;
+  name: string;
+  characterId: string;
+  characterColor: string;
+  characterIcon: string;
+  totalDrinks: number;
+  stars: number;
+  hasShield: boolean;
+  isHost: boolean;
+  joinedAt: number;
+}
+
+export interface RoomEvent {
+  type: 'drinks_all' | 'drinks_others';
+  fromPlayerId: string;
+  fromPlayerName: string;
+  message: string;
+  drinks: number;
+}
+
+export type RoomStatus = 'idle' | 'connecting' | 'lobby' | 'playing' | 'error';

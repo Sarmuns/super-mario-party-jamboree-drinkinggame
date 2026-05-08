@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Character } from '../types';
+import type { Character, RoomPlayer, RoomEvent } from '../types';
 import { Header } from './Header';
 import { SpacesSection } from './SpacesSection';
 import { DiceSection } from './DiceSection';
@@ -7,6 +7,7 @@ import { StarsSection } from './StarsSection';
 import { RulesSection } from './RulesSection';
 import { EndGameModal } from './EndGameModal';
 import { MinigameModal } from './MinigameModal';
+import { PlayersOverlay } from './PlayersOverlay';
 
 interface Props {
   character: Character;
@@ -17,6 +18,12 @@ interface Props {
   stars: number;
   turn: number;
   canUndo: boolean;
+  // room (optional — undefined in offline mode)
+  roomPlayers?: RoomPlayer[];
+  roomCode?: string;
+  roomPlayerId?: string;
+  onBroadcast?: (event: RoomEvent) => void;
+  // callbacks
   onDrink: (count: number) => void;
   onActivateShield: () => void;
   onUseShield: () => void;
@@ -32,14 +39,17 @@ interface Props {
 export function GameTracker({
   character, totalDrinks, hasShield, isHomestretch, isJamboree,
   stars, turn, canUndo,
+  roomPlayers, roomCode, roomPlayerId, onBroadcast,
   onDrink, onActivateShield, onUseShield, onUndo,
   onToggleHomestretch, onToggleJamboree, onAddStars, onIncrementTurn,
   onReset, showToast,
 }: Props) {
   const [showEndGame, setShowEndGame] = useState(false);
   const [showMinigame, setShowMinigame] = useState(false);
+  const [showPlayers, setShowPlayers] = useState(false);
 
   const multiplier = (isHomestretch ? 2 : 1) * (isJamboree ? 2 : 1);
+  const isRoomMode = !!roomPlayers;
 
   function handleRoll1() {
     if (hasShield) { showToast('Já tem escudo! 🛡️'); }
@@ -62,6 +72,22 @@ export function GameTracker({
     onIncrementTurn();
     setShowMinigame(false);
     showToast(`🎮 Turno ${turn} encerrado! 🍺 +${drinks}`);
+    // Broadcast pre-game drink to room
+    if (onBroadcast) {
+      onBroadcast({
+        type: 'drinks_all',
+        fromPlayerId: roomPlayerId ?? '',
+        fromPlayerName: character.name,
+        message: `${character.name} encerrou o turno ${turn} — minigame! Beba antes de jogar.`,
+        drinks: 1,
+      });
+    }
+  }
+
+  function handleMinigameSkip() {
+    onIncrementTurn();
+    setShowMinigame(false);
+    showToast(`Turno ${turn} encerrado`);
   }
 
   return (
@@ -69,14 +95,19 @@ export function GameTracker({
       <Header
         character={character} totalDrinks={totalDrinks} hasShield={hasShield}
         isHomestretch={isHomestretch} isJamboree={isJamboree} stars={stars} turn={turn} canUndo={canUndo}
+        roomPlayerCount={roomPlayers?.length}
         onUseShield={handleUseShieldFromHeader} onToggleHomestretch={onToggleHomestretch}
         onToggleJamboree={onToggleJamboree} onReset={onReset} onUndo={onUndo}
         onAddOne={() => { onDrink(1); showToast('🍺 +1'); }}
+        onShowPlayers={isRoomMode ? () => setShowPlayers(true) : undefined}
       />
 
       <div className="flex-1 overflow-y-auto divide-y divide-gray-800">
         <SpacesSection multiplier={multiplier} hasShield={hasShield}
-          onDrink={onDrink} onUseShield={onUseShield} showToast={showToast} />
+          onDrink={onDrink} onUseShield={onUseShield} showToast={showToast}
+          onBroadcast={onBroadcast} isRoomMode={isRoomMode}
+          characterName={character.name} roomPlayerId={roomPlayerId}
+        />
 
         <DiceSection hasShield={hasShield} multiplier={multiplier}
           onRoll1={handleRoll1} onRoll10={handleRoll10} />
@@ -86,7 +117,6 @@ export function GameTracker({
 
         <RulesSection />
 
-        {/* Bottom actions */}
         <div className="px-4 py-6 flex flex-col gap-3">
           <button onClick={() => setShowMinigame(true)}
             className="w-full py-4 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform"
@@ -103,13 +133,19 @@ export function GameTracker({
       {showMinigame && (
         <MinigameModal turn={turn} multiplier={multiplier}
           onConfirm={handleMinigameConfirm}
-          onClose={() => { onIncrementTurn(); setShowMinigame(false); showToast(`Turno ${turn} encerrado`); }} />
+          onClose={handleMinigameSkip} />
       )}
 
       {showEndGame && (
         <EndGameModal character={character} totalDrinks={totalDrinks} stars={stars} turn={turn}
           onClose={() => setShowEndGame(false)}
           onReset={() => { setShowEndGame(false); onReset(); }} />
+      )}
+
+      {showPlayers && roomPlayers && roomCode && roomPlayerId && (
+        <PlayersOverlay
+          players={roomPlayers} playerId={roomPlayerId} roomCode={roomCode}
+          onClose={() => setShowPlayers(false)} />
       )}
     </div>
   );

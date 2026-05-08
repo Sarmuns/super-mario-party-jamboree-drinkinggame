@@ -7,15 +7,21 @@ import gameData from '../data/smpj-drinking-game-data.json';
 const EXCLUDED_SPACES = new Set(['start', 'star_exchange']);
 const playableSpaces = (gameData.spaces as Space[]).filter(s => !EXCLUDED_SPACES.has(s.id));
 
+import type { RoomEvent } from '../types';
+
 interface Props {
   multiplier: number;
   hasShield: boolean;
+  characterName?: string;
+  roomPlayerId?: string;
+  isRoomMode?: boolean;
   onDrink: (count: number) => void;
   onUseShield: () => void;
   showToast: (msg: string) => void;
+  onBroadcast?: (event: RoomEvent) => void;
 }
 
-export function SpacesSection({ multiplier, hasShield, onDrink, onUseShield, showToast }: Props) {
+export function SpacesSection({ multiplier, hasShield, characterName, roomPlayerId, isRoomMode, onDrink, onUseShield, showToast, onBroadcast }: Props) {
   const [activeSpace, setActiveSpace] = useState<Space | null>(null);
 
   function handleDrink(count: number) {
@@ -46,7 +52,9 @@ export function SpacesSection({ multiplier, hasShield, onDrink, onUseShield, sho
 
       {activeSpace && (
         <SpaceModal space={activeSpace} multiplier={multiplier} hasShield={hasShield}
-          onDrink={handleDrink} onUseShield={handleShield} onClose={() => setActiveSpace(null)} />
+          characterName={characterName} roomPlayerId={roomPlayerId} isRoomMode={isRoomMode}
+          onDrink={handleDrink} onUseShield={handleShield} onClose={() => setActiveSpace(null)}
+          onBroadcast={onBroadcast} />
       )}
     </section>
   );

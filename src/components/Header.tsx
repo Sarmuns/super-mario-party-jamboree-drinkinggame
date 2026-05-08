@@ -11,18 +11,20 @@ interface Props {
   stars: number;
   turn: number;
   canUndo: boolean;
+  roomPlayerCount?: number;
   onUseShield: () => void;
   onToggleHomestretch: () => void;
   onToggleJamboree: () => void;
   onReset: () => void;
   onUndo: () => void;
   onAddOne: () => void;
+  onShowPlayers?: () => void;
 }
 
 export function Header({
   character, totalDrinks, hasShield, isHomestretch, isJamboree,
-  stars, turn, canUndo,
-  onUseShield, onToggleHomestretch, onToggleJamboree, onReset, onUndo, onAddOne,
+  stars, turn, canUndo, roomPlayerCount,
+  onUseShield, onToggleHomestretch, onToggleJamboree, onReset, onUndo, onAddOne, onShowPlayers,
 }: Props) {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [animKey, setAnimKey] = useState(0);
@@ -78,6 +80,15 @@ export function Header({
             <span className="text-xs text-gray-400">Turno {turn}</span>
           </div>
         </div>
+
+        {/* Room players button */}
+        {onShowPlayers && (
+          <button onClick={onShowPlayers}
+            className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-gray-600 text-gray-300 bg-gray-800 active:scale-95 transition-transform">
+            <span>👥</span>
+            <span>{roomPlayerCount ?? 0}</span>
+          </button>
+        )}
 
         {hasShield && (
           <button onClick={onUseShield}

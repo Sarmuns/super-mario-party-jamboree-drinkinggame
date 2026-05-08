@@ -1,45 +1,82 @@
 import { useState } from 'react';
-import type { Character } from '../types';
+import type { Character, RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
 import characters from '../data/smpj-characters.json';
 
 interface Props {
   onStart: (character: Character) => void;
+  // Modo sala: jogadores já na sala (para travar personagens)
+  roomPlayers?: RoomPlayer[];
+  myPlayerId?: string;
 }
 
-export function CharacterSelect({ onStart }: Props) {
+export function CharacterSelect({ onStart, roomPlayers, myPlayerId }: Props) {
   const [selected, setSelected] = useState<Character | null>(null);
+
+  // Personagens tomados por OUTROS jogadores (com personagem já selecionado)
+  const takenMap = new Map<string, RoomPlayer>();
+  if (roomPlayers && myPlayerId) {
+    for (const p of roomPlayers) {
+      if (p.playerId !== myPlayerId && p.characterId) {
+        takenMap.set(p.characterId, p);
+      }
+    }
+  }
+
+  const isRoomMode = !!roomPlayers;
+
+  function handleSelect(char: Character) {
+    if (takenMap.has(char.id)) return; // bloqueado
+    setSelected(char);
+  }
 
   return (
     <div className="min-h-dvh bg-gray-900 flex flex-col">
       <div className="px-4 pt-8 pb-4 text-center">
         <div className="text-3xl font-bold text-white mb-1">Mario Party</div>
         <div className="text-lg text-yellow-400 font-semibold">Drinking Game 🍺</div>
-        <p className="text-gray-400 text-sm mt-2">Escolha seu personagem</p>
+        <p className="text-gray-400 text-sm mt-2">
+          {isRoomMode ? 'Escolha seu personagem — personagens em uso estão bloqueados' : 'Escolha seu personagem'}
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {(characters as Character[]).map(char => {
             const isSelected = selected?.id === char.id;
+            const takenBy = takenMap.get(char.id);
+            const isTaken = !!takenBy;
+
             return (
               <button
                 key={char.id}
-                onClick={() => setSelected(char)}
-                className="relative flex flex-col items-center gap-2 p-3 rounded-2xl bg-gray-800 border-2 transition-all duration-150 active:scale-95"
+                onClick={() => handleSelect(char)}
+                disabled={isTaken}
+                className="relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-150"
                 style={{
-                  borderColor: isSelected ? char.color : 'transparent',
+                  backgroundColor: isTaken ? '#111827' : '#1f2937',
+                  borderColor: isSelected ? char.color : isTaken ? '#1f2937' : 'transparent',
                   boxShadow: isSelected ? `0 0 0 2px ${char.color}40` : 'none',
+                  opacity: isTaken ? 0.45 : 1,
+                  cursor: isTaken ? 'not-allowed' : 'pointer',
                 }}
               >
+                {/* Checkmark se selecionado */}
                 {isSelected && (
-                  <div
-                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                    style={{ backgroundColor: char.color }}
-                  >
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white z-10"
+                    style={{ backgroundColor: char.color }}>
                     ✓
                   </div>
                 )}
+
+                {/* Badge de quem está usando */}
+                {isTaken && takenBy.name && (
+                  <div className="absolute top-2 left-2 right-2 flex items-center gap-1 z-10">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: takenBy.characterColor }} />
+                    <span className="text-[10px] text-gray-400 truncate leading-none">{takenBy.name}</span>
+                  </div>
+                )}
+
                 <ImageWithFallback
                   src={char.portrait_url}
                   alt={char.name}
@@ -50,8 +87,8 @@ export function CharacterSelect({ onStart }: Props) {
                 <span className="text-sm font-semibold text-white text-center leading-tight">
                   {char.name}
                 </span>
-                {char.unlockable && (
-                  <span className="text-xs text-gray-500">desbloqueável</span>
+                {isTaken && (
+                  <span className="text-xs text-gray-600">em uso</span>
                 )}
               </button>
             );
@@ -64,11 +101,9 @@ export function CharacterSelect({ onStart }: Props) {
           onClick={() => selected && onStart(selected)}
           disabled={!selected}
           className="w-full py-4 rounded-2xl text-lg font-bold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-white"
-          style={{
-            backgroundColor: selected ? selected.color : '#374151',
-          }}
+          style={{ backgroundColor: selected ? selected.color : '#374151' }}
         >
-          {selected ? `Jogar com ${selected.name}!` : 'Selecione um personagem'}
+          {selected ? `${isRoomMode ? 'Confirmar' : 'Jogar com'} ${selected.name}!` : 'Selecione um personagem'}
         </button>
       </div>
     </div>
