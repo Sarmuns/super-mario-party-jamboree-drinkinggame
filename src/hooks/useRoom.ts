@@ -32,8 +32,19 @@ export function useRoom() {
   function syncPresence(channel: RealtimeChannel) {
     const raw = channel.presenceState<RoomPlayer>();
     const all: RoomPlayer[] = Object.values(raw).flat();
-    all.sort((a, b) => a.joinedAt - b.joinedAt);
-    setPlayers(all);
+
+    // Supabase pode mostrar 2 entries do mesmo jogador durante transições de track().
+    // Deduplica por playerId, mantendo o mais completo (com characterId tem prioridade).
+    const byPlayer = new Map<string, RoomPlayer>();
+    for (const p of all) {
+      const existing = byPlayer.get(p.playerId);
+      if (!existing || (p.characterId && !existing.characterId)) {
+        byPlayer.set(p.playerId, p);
+      }
+    }
+
+    const deduped = Array.from(byPlayer.values()).sort((a, b) => a.joinedAt - b.joinedAt);
+    setPlayers(deduped);
   }
 
   function buildChannel(code: string): RealtimeChannel {
