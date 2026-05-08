@@ -1,5 +1,6 @@
 import type { RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
+import { resolvePortrait } from '../lib/characterLookup';
 
 interface Props {
   roomCode: string;
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }: Props) {
-  const canStart = players.length >= 2;
+  const canStart = players.filter(p => p.characterId).length >= 2;
 
   return (
     <div className="min-h-dvh bg-gray-900 flex flex-col px-4">
@@ -34,36 +35,43 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
           Jogadores ({players.length})
         </div>
         <div className="flex flex-col gap-2">
-          {players.map(p => (
-            <div key={p.playerId}
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gray-800 border border-gray-700">
-              <div className="rounded-full p-0.5 shrink-0" style={{ background: p.characterColor }}>
-                <ImageWithFallback
-                  src={p.characterPortrait || p.characterIcon} alt={p.name}
-                  fallbackChar={(p.name || '?')[0]} fallbackColor={p.characterColor}
-                  className="w-10 h-10 rounded-full object-contain bg-gray-900"
-                />
+          {players.map(p => {
+            const portrait = resolvePortrait(p.characterId, p.characterPortrait || p.characterIcon);
+            const color = p.characterId ? p.characterColor : '#374151';
+            const hasChar = !!p.characterId;
+            return (
+              <div key={p.playerId}
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gray-800 border border-gray-700">
+                <div className="rounded-full p-0.5 shrink-0" style={{ background: color }}>
+                  <ImageWithFallback
+                    src={hasChar ? portrait : null}
+                    alt={p.name || '?'}
+                    fallbackChar={(p.name || '?')[0]}
+                    fallbackColor={color}
+                    className="w-10 h-10 rounded-full object-contain bg-gray-900"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold text-white">
+                    {p.name || <span className="text-gray-500 italic">escolhendo personagem...</span>}
+                  </div>
+                  {p.isHost && <div className="text-xs text-yellow-400">Host</div>}
+                </div>
+                {p.playerId === playerId && (
+                  <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">você</span>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-white">{p.name}</div>
-                {p.isHost && <div className="text-xs text-yellow-400">Host</div>}
-              </div>
-              {p.playerId === playerId && (
-                <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">você</span>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       {isHost && (
         <div className="py-6">
-          <button
-            onClick={onStart}
-            disabled={!canStart}
+          <button onClick={onStart} disabled={!canStart}
             className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform disabled:opacity-40"
             style={{ backgroundColor: 'var(--accent)' }}>
-            {canStart ? '🎮 Começar Partida' : 'Aguardando mais jogadores...'}
+            {canStart ? '🎮 Começar Partida' : 'Aguardando jogadores escolherem personagem...'}
           </button>
         </div>
       )}
