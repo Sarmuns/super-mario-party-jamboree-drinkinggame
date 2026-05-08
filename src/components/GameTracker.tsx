@@ -22,6 +22,7 @@ interface Props {
   turn: number;
   canUndo: boolean;
   logEntries: LogEntry[];
+  onClearLog?: () => void;
   roomPlayers?: RoomPlayer[];
   roomCode?: string;
   roomPlayerId?: string;
@@ -42,7 +43,7 @@ interface Props {
 
 export function GameTracker({
   character, totalDrinks, hasShield, isHomestretch, isJamboree,
-  stars, turn, canUndo, logEntries,
+  stars, turn, canUndo, logEntries, onClearLog,
   roomPlayers, roomCode, roomPlayerId, isHost, onBroadcast,
   onDrink, onActivateShield, onUseShield, onUndo,
   onToggleHomestretch, onToggleJamboree, onAddStars, onIncrementTurn,
@@ -234,7 +235,7 @@ export function GameTracker({
             </div>
           </div>
         ) : (
-          <LogTab entries={logEntries} />
+          <LogTab entries={logEntries} onClear={onClearLog} />
         )}
       </div>
 
