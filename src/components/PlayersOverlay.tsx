@@ -40,7 +40,7 @@ export function PlayersOverlay({ players, playerId, roomCode, onClose }: Props) 
                   <div className="rounded-full p-0.5 shrink-0" style={{ background: p.characterColor }}>
                     <ImageWithFallback
                       src={p.characterIcon} alt={p.name}
-                      fallbackChar={p.name[0]} fallbackColor={p.characterColor}
+                      fallbackChar={(p.name || '?')[0]} fallbackColor={p.characterColor}
                       className="w-8 h-8 rounded-full object-contain bg-gray-900"
                     />
                   </div>

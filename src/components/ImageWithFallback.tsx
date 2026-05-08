@@ -18,7 +18,7 @@ export function ImageWithFallback({ src, alt, fallbackChar, fallbackColor, class
         style={{ backgroundColor: fallbackColor }}
         aria-label={alt}
       >
-        {fallbackChar.toUpperCase()}
+        {(fallbackChar || '?').toUpperCase()}
       </div>
     );
   }
