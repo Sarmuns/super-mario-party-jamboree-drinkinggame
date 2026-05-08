@@ -1,31 +1,48 @@
 import { useState } from 'react';
 
-interface Props {
-  turn: number;
-  multiplier: number;
-  onConfirm: (drinksToAdd: number) => void;
-  onClose: () => void;
-}
-
 const FORMATS = [
   { id: 'ffa',  label: 'FFA',  description: 'Último lugar bebe +1' },
   { id: '2v2',  label: '2v2',  description: 'Dupla perdedora bebe +1 cada' },
   { id: '1v3',  label: '1v3',  description: 'Lado perdedor bebe +1 cada' },
 ];
 
-export function MinigameModal({ turn, multiplier, onConfirm, onClose }: Props) {
-  const [format, setFormat] = useState('ffa');
+// ── Modo Host ── (controla formato e encerra turno)
+interface HostProps {
+  mode: 'host';
+  turn: number;
+  multiplier: number;
+  onConfirm: (drinksToAdd: number, format: string) => void;
+  onClose: () => void;
+}
+
+// ── Modo Guest ── (só seleciona resultado)
+interface GuestProps {
+  mode: 'guest';
+  turn: number;
+  multiplier: number;
+  hostName: string;
+  format?: string;
+  onConfirm: (drinksToAdd: number) => void;
+  onClose: () => void;
+}
+
+type Props = HostProps | GuestProps;
+
+export function MinigameModal(props: Props) {
+  const [format, setFormat] = useState(props.mode === 'guest' ? (props.format ?? 'ffa') : 'ffa');
   const [result, setResult] = useState<'won' | 'lost' | null>(null);
 
+  const { turn, multiplier, onClose } = props;
   const preDrink = 1 * multiplier;
   const loserDrink = 1 * multiplier;
 
+  const selectedFormat = FORMATS.find(f => f.id === format)!;
+
   function confirm() {
     const total = preDrink + (result === 'lost' ? loserDrink : 0);
-    onConfirm(total);
+    if (props.mode === 'host') props.onConfirm(total, format);
+    else props.onConfirm(total);
   }
-
-  const selectedFormat = FORMATS.find(f => f.id === format)!;
 
   return (
     <>
@@ -42,7 +59,11 @@ export function MinigameModal({ turn, multiplier, onConfirm, onClose }: Props) {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-lg font-bold text-white">🎮 Minigame</div>
-                <div className="text-xs text-gray-400">Fim do Turno {turn}</div>
+                <div className="text-xs text-gray-400">
+                  {props.mode === 'host'
+                    ? `Fim do Turno ${turn}`
+                    : `Turno ${turn} encerrado por ${props.hostName}`}
+                </div>
               </div>
               <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-700 text-gray-400 text-lg">×</button>
             </div>
@@ -52,46 +73,53 @@ export function MinigameModal({ turn, multiplier, onConfirm, onClose }: Props) {
               <span className="text-xl">🍺</span>
               <div>
                 <div className="text-sm font-semibold text-white">Antes de jogar</div>
-                <div className="text-xs text-gray-400">Todo mundo bebe {preDrink} gole{preDrink !== 1 ? 's' : ''}{multiplier > 1 ? ` (${multiplier}x)` : ''}</div>
+                <div className="text-xs text-gray-400">
+                  Todo mundo bebe {preDrink} gole{preDrink !== 1 ? 's' : ''}{multiplier > 1 ? ` (${multiplier}x)` : ''}
+                </div>
               </div>
             </div>
 
-            {/* Format selector */}
+            {/* Formato — host seleciona, guest vê somente */}
             <div>
               <div className="text-xs text-gray-400 mb-2 uppercase tracking-wide font-semibold">Formato</div>
-              <div className="flex gap-2">
-                {FORMATS.map(f => (
-                  <button key={f.id} onClick={() => setFormat(f.id)}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 border"
-                    style={format === f.id
-                      ? { backgroundColor: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' }
-                      : { backgroundColor: '#374151', color: '#9ca3af', borderColor: 'transparent' }
-                    }>
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-              <div className="text-xs text-gray-400 mt-2">{selectedFormat.description}</div>
+              {props.mode === 'host' ? (
+                <>
+                  <div className="flex gap-2">
+                    {FORMATS.map(f => (
+                      <button key={f.id} onClick={() => setFormat(f.id)}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 border"
+                        style={format === f.id
+                          ? { backgroundColor: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' }
+                          : { backgroundColor: '#374151', color: '#9ca3af', borderColor: 'transparent' }}>
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-2">{selectedFormat.description}</div>
+                </>
+              ) : (
+                <div className="px-3 py-2 rounded-xl bg-gray-700/60 text-sm text-gray-300">
+                  <span className="font-bold text-white">{selectedFormat.label}</span> — {selectedFormat.description}
+                </div>
+              )}
             </div>
 
-            {/* Result */}
+            {/* Resultado */}
             <div>
-              <div className="text-xs text-gray-400 mb-2 uppercase tracking-wide font-semibold">Resultado</div>
+              <div className="text-xs text-gray-400 mb-2 uppercase tracking-wide font-semibold">Seu resultado</div>
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={() => setResult('won')}
                   className="py-4 rounded-2xl text-sm font-bold border-2 transition-all active:scale-95"
                   style={result === 'won'
                     ? { backgroundColor: '#166534', borderColor: '#22c55e', color: '#86efac' }
-                    : { backgroundColor: '#1f2937', borderColor: '#374151', color: '#9ca3af' }
-                  }>
+                    : { backgroundColor: '#1f2937', borderColor: '#374151', color: '#9ca3af' }}>
                   🏆 Ganhei
                 </button>
                 <button onClick={() => setResult('lost')}
                   className="py-4 rounded-2xl text-sm font-bold border-2 transition-all active:scale-95"
                   style={result === 'lost'
                     ? { backgroundColor: '#7f1d1d', borderColor: '#ef4444', color: '#fca5a5' }
-                    : { backgroundColor: '#1f2937', borderColor: '#374151', color: '#9ca3af' }
-                  }>
+                    : { backgroundColor: '#1f2937', borderColor: '#374151', color: '#9ca3af' }}>
                   😅 Perdi
                 </button>
               </div>
@@ -102,19 +130,19 @@ export function MinigameModal({ turn, multiplier, onConfirm, onClose }: Props) {
               )}
             </div>
 
-            {/* Summary + confirm */}
             {result && (
               <button onClick={confirm}
                 className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
                 style={{ backgroundColor: 'var(--accent)' }}>
-                Beber {preDrink + (result === 'lost' ? loserDrink : 0)} gole{(preDrink + (result === 'lost' ? loserDrink : 0)) !== 1 ? 's' : ''} e avançar turno
+                {props.mode === 'host' ? 'Confirmar e encerrar turno' : 'Confirmar'}
+                {' '}({preDrink + (result === 'lost' ? loserDrink : 0)} gole{(preDrink + (result === 'lost' ? loserDrink : 0)) !== 1 ? 's' : ''})
               </button>
             )}
 
             {!result && (
               <button onClick={onClose}
                 className="w-full py-3 rounded-2xl text-sm font-semibold text-gray-400 bg-gray-700/60 active:scale-95 transition-transform">
-                Pular minigame
+                {props.mode === 'host' ? 'Pular minigame' : 'Fechar'}
               </button>
             )}
           </div>

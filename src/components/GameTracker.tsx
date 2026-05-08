@@ -22,6 +22,7 @@ interface Props {
   roomPlayers?: RoomPlayer[];
   roomCode?: string;
   roomPlayerId?: string;
+  isHost?: boolean;
   onBroadcast?: (event: RoomEvent) => void;
   // callbacks
   onDrink: (count: number) => void;
@@ -39,7 +40,7 @@ interface Props {
 export function GameTracker({
   character, totalDrinks, hasShield, isHomestretch, isJamboree,
   stars, turn, canUndo,
-  roomPlayers, roomCode, roomPlayerId, onBroadcast,
+  roomPlayers, roomCode, roomPlayerId, isHost, onBroadcast,
   onDrink, onActivateShield, onUseShield, onUndo,
   onToggleHomestretch, onToggleJamboree, onAddStars, onIncrementTurn,
   onReset, showToast,
@@ -67,19 +68,20 @@ export function GameTracker({
     showToast('Escudo usado! 🛡️ Comunique à mesa.');
   }
 
-  function handleMinigameConfirm(drinks: number) {
+  function handleMinigameConfirm(drinks: number, format: string) {
     onDrink(drinks);
     onIncrementTurn();
     setShowMinigame(false);
     showToast(`🎮 Turno ${turn} encerrado! 🍺 +${drinks}`);
-    // Broadcast pre-game drink to room
     if (onBroadcast) {
       onBroadcast({
-        type: 'drinks_all',
+        type: 'minigame_start',
         fromPlayerId: roomPlayerId ?? '',
         fromPlayerName: character.name,
-        message: `${character.name} encerrou o turno ${turn} — minigame! Beba antes de jogar.`,
+        message: `${character.name} encerrou o Turno ${turn}!`,
         drinks: 1,
+        turn,
+        minigameFormat: format,
       });
     }
   }
@@ -118,11 +120,18 @@ export function GameTracker({
         <RulesSection />
 
         <div className="px-4 py-6 flex flex-col gap-3">
-          <button onClick={() => setShowMinigame(true)}
-            className="w-full py-4 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform"
-            style={{ backgroundColor: 'var(--accent)', opacity: 0.9 }}>
-            🎮 Fim do Turno {turn}
-          </button>
+          {(!isRoomMode || isHost) && (
+            <button onClick={() => setShowMinigame(true)}
+              className="w-full py-4 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--accent)', opacity: 0.9 }}>
+              🎮 Fim do Turno {turn}
+            </button>
+          )}
+          {isRoomMode && !isHost && (
+            <div className="text-center text-xs text-gray-600 py-2">
+              Aguardando o host encerrar o turno...
+            </div>
+          )}
           <button onClick={() => setShowEndGame(true)}
             className="w-full py-3 rounded-2xl text-sm font-bold text-gray-400 border border-gray-700 bg-gray-800/60 active:scale-95 transition-transform">
             🏁 Fim de Partida
@@ -131,7 +140,7 @@ export function GameTracker({
       </div>
 
       {showMinigame && (
-        <MinigameModal turn={turn} multiplier={multiplier}
+        <MinigameModal mode="host" turn={turn} multiplier={multiplier}
           onConfirm={handleMinigameConfirm}
           onClose={handleMinigameSkip} />
       )}

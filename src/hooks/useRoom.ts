@@ -15,27 +15,52 @@ const PLACEHOLDER: Omit<RoomPlayer, 'playerId' | 'isHost' | 'joinedAt'> = {
   hasShield: false,
 };
 
+// Persiste dados mínimos da sala para reconexão
+const ROOM_PERSIST_KEY = 'smpj-room-session';
+
+interface RoomSession {
+  code: string;
+  isHost: boolean;
+  status: 'lobby' | 'playing';
+}
+
+function saveSession(session: RoomSession | null) {
+  if (session) localStorage.setItem(ROOM_PERSIST_KEY, JSON.stringify(session));
+  else localStorage.removeItem(ROOM_PERSIST_KEY);
+}
+
+function loadSession(): RoomSession | null {
+  try {
+    const raw = localStorage.getItem(ROOM_PERSIST_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
 export function useRoom() {
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
   const [status, setStatus] = useState<RoomStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [incomingEvent, setIncomingEvent] = useState<RoomEvent | null>(null);
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
-  // Track our own state locally so updateMyState doesn't depend on presence sync timing
   const myStateRef = useRef<RoomPlayer | null>(null);
+  const savedHostRef = useRef<boolean>(false);
 
   const playerId = getPlayerId();
-  const isHost = players.find(p => p.playerId === playerId)?.isHost ?? false;
+
+  const isHost = (() => {
+    // Durante reconexão, usamos o valor salvo antes do sync chegar
+    const fromPresence = players.find(p => p.playerId === playerId)?.isHost;
+    return fromPresence ?? savedHostRef.current;
+  })();
+
   const myPlayer = players.find(p => p.playerId === playerId);
 
   function syncPresence(channel: RealtimeChannel) {
     const raw = channel.presenceState<RoomPlayer>();
     const all: RoomPlayer[] = Object.values(raw).flat();
-
-    // Supabase pode mostrar 2 entries do mesmo jogador durante transições de track().
-    // Deduplica por playerId, mantendo o mais completo (com characterId tem prioridade).
     const byPlayer = new Map<string, RoomPlayer>();
     for (const p of all) {
       const existing = byPlayer.get(p.playerId);
@@ -43,7 +68,6 @@ export function useRoom() {
         byPlayer.set(p.playerId, p);
       }
     }
-
     const deduped = Array.from(byPlayer.values()).sort((a, b) => a.joinedAt - b.joinedAt);
     setPlayers(deduped);
   }
@@ -57,6 +81,8 @@ export function useRoom() {
       })
       .on('broadcast', { event: 'game_start' }, () => {
         setStatus('playing');
+        const session = loadSession();
+        if (session) saveSession({ ...session, status: 'playing' });
       });
   }
 
@@ -65,10 +91,71 @@ export function useRoom() {
     await channel.track(playerState);
   }
 
-  // Entra na sala SEM personagem — personagem é escolhido depois
+  // Reconecta a uma sala existente (chamada ao voltar do background ou recarregar)
+  const reconnect = useCallback(async (session: RoomSession, savedState?: Partial<RoomPlayer>): Promise<boolean> => {
+    setIsReconnecting(true);
+    setError(null);
+    savedHostRef.current = session.isHost;
+
+    // Remove canal antigo se existir
+    if (channelRef.current) {
+      await channelRef.current.unsubscribe();
+      channelRef.current = null;
+    }
+
+    const channel = buildChannel(session.code);
+    channelRef.current = channel;
+
+    return new Promise(resolve => {
+      channel.subscribe(async (s) => {
+        if (s === 'SUBSCRIBED') {
+          // Se era host e status era playing, verifica se ainda há outros
+          // (sala pode ter sumido se todos saíram)
+          await new Promise(r => setTimeout(r, 1200));
+
+          const raw = channel.presenceState<RoomPlayer>();
+          const others = Object.values(raw).flat().filter(p => p.playerId !== playerId);
+
+          // Host pode reconectar mesmo sem outros (sala é dele)
+          // Guest precisa encontrar o host
+          if (!session.isHost && !others.some(p => p.isHost)) {
+            await channel.unsubscribe();
+            channelRef.current = null;
+            saveSession(null);
+            setStatus('idle');
+            setError('Sala não encontrada — o host pode ter saído.');
+            setIsReconnecting(false);
+            resolve(false);
+            return;
+          }
+
+          const state: RoomPlayer = {
+            ...PLACEHOLDER,
+            ...savedState,
+            playerId,
+            isHost: session.isHost,
+            joinedAt: myStateRef.current?.joinedAt ?? Date.now(),
+          };
+          await trackPlayer(channel, state);
+
+          setRoomCode(session.code);
+          setStatus(session.status);
+          setIsReconnecting(false);
+          resolve(true);
+        } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') {
+          setIsReconnecting(false);
+          setStatus('idle');
+          setError('Erro ao reconectar.');
+          resolve(false);
+        }
+      });
+    });
+  }, []);
+
   const createRoom = useCallback(async (code: string): Promise<boolean> => {
     setStatus('connecting');
     setError(null);
+    savedHostRef.current = true;
     const channel = buildChannel(code);
     channelRef.current = channel;
 
@@ -79,6 +166,7 @@ export function useRoom() {
           await trackPlayer(channel, state);
           setRoomCode(code);
           setStatus('lobby');
+          saveSession({ code, isHost: true, status: 'lobby' });
           resolve(true);
         } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') {
           setError('Erro ao criar sala. Verifique sua conexão.');
@@ -92,6 +180,7 @@ export function useRoom() {
   const joinRoom = useCallback(async (code: string): Promise<boolean> => {
     setStatus('connecting');
     setError(null);
+    savedHostRef.current = false;
     const channel = buildChannel(code);
     channelRef.current = channel;
 
@@ -116,6 +205,7 @@ export function useRoom() {
           await trackPlayer(channel, state);
           setRoomCode(code);
           setStatus('lobby');
+          saveSession({ code, isHost: false, status: 'lobby' });
           resolve(true);
         } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') {
           setError('Erro ao entrar na sala.');
@@ -126,7 +216,6 @@ export function useRoom() {
     });
   }, []);
 
-  // Seleciona personagem dentro da sala — atualiza presença em tempo real
   const selectRoomCharacter = useCallback(async (character: Character) => {
     if (!channelRef.current || !myStateRef.current) return;
     const updated: RoomPlayer = {
@@ -155,6 +244,8 @@ export function useRoom() {
     if (!channelRef.current || !isHost) return;
     await channelRef.current.send({ type: 'broadcast', event: 'game_start', payload: {} });
     setStatus('playing');
+    const session = loadSession();
+    if (session) saveSession({ ...session, status: 'playing' });
   }, [isHost]);
 
   const leaveRoom = useCallback(async () => {
@@ -163,6 +254,8 @@ export function useRoom() {
       channelRef.current = null;
     }
     myStateRef.current = null;
+    savedHostRef.current = false;
+    saveSession(null);
     setRoomCode(null);
     setPlayers([]);
     setStatus('idle');
@@ -172,12 +265,33 @@ export function useRoom() {
 
   const dismissEvent = useCallback(() => setIncomingEvent(null), []);
 
+  // Reconecta ao voltar do background (visibilitychange)
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState !== 'visible') return;
+      if (!roomCode || !channelRef.current) return;
+
+      // Verifica se o canal ainda está subscrito
+      const state = (channelRef.current as any).state;
+      if (state === 'joined') return; // ainda conectado
+
+      const session = loadSession();
+      if (session) {
+        reconnect(session, myStateRef.current ?? undefined);
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [roomCode, reconnect]);
+
   useEffect(() => () => { channelRef.current?.unsubscribe(); }, []);
 
   return {
-    roomCode, players, status, error, incomingEvent,
+    roomCode, players, status, error, incomingEvent, isReconnecting,
     isHost, playerId, myPlayer,
-    createRoom, joinRoom, selectRoomCharacter, updateMyState, broadcast,
+    reconnect, createRoom, joinRoom, selectRoomCharacter, updateMyState, broadcast,
     startGame, leaveRoom, dismissEvent,
+    loadSession,
   };
 }

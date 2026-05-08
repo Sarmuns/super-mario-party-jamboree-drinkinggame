@@ -8,6 +8,7 @@ import { RoomEntry } from './components/RoomEntry';
 import { Lobby } from './components/Lobby';
 import { GameTracker } from './components/GameTracker';
 import { IncomingEventModal } from './components/IncomingEventModal';
+import { MinigameModal } from './components/MinigameModal';
 import { ToastContainer } from './components/Toast';
 import type { Character } from './types';
 
@@ -21,6 +22,33 @@ export default function App() {
   const game = useGameState();
   const room = useRoom();
   const { toasts, showToast, dismissToast } = useToast();
+
+  // Tenta reconectar à sala ao abrir o app
+  useEffect(() => {
+    const session = room.loadSession();
+    if (!session || appMode !== 'sala') return;
+    if (room.status !== 'idle') return;
+
+    const savedState = myStateFromGame();
+    room.reconnect(session, savedState).then(ok => {
+      if (!ok) setMode('select');
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function myStateFromGame(): Partial<import('./types').RoomPlayer> {
+    const c = game.state.character;
+    if (!c) return {};
+    return {
+      name: c.name,
+      characterId: c.id,
+      characterColor: c.color,
+      characterIcon: c.icon_url,
+      characterPortrait: c.portrait_url,
+      totalDrinks: game.state.totalDrinks,
+      stars: game.state.stars,
+      hasShield: game.state.hasShield,
+    };
+  }
 
   // Accent color from character
   useEffect(() => {
@@ -53,13 +81,23 @@ export default function App() {
     setMode('select');
   }
 
-  // Personagem escolhido dentro da sala
   async function handleRoomCharacterSelect(character: Character) {
     game.selectCharacter(character);
     await room.selectRoomCharacter(character);
   }
 
   const multiplier = (game.state.isHomestretch ? 2 : 1) * (game.state.isJamboree ? 2 : 1);
+
+  // Evento incoming: minigame_start abre modal próprio, outros vão pro IncomingEventModal
+  const incomingEvent = room.incomingEvent;
+  const isMinigameEvent = incomingEvent?.type === 'minigame_start';
+  const isDrinkEvent = incomingEvent && !isMinigameEvent;
+
+  function handleGuestMinigameConfirm(drinks: number) {
+    game.addDrinks(drinks);
+    room.dismissEvent();
+    showToast(`🎮 Minigame! 🍺 +${drinks}`);
+  }
 
   const commonGameProps = {
     character: game.state.character!,
@@ -85,16 +123,37 @@ export default function App() {
     <>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Incoming event modal (sala only) */}
-      {appMode === 'sala' && room.incomingEvent && room.status === 'playing' && (
+      {/* Drink event modal (Lucky Space, Chance Time etc.) */}
+      {appMode === 'sala' && isDrinkEvent && room.status === 'playing' && (
         <IncomingEventModal
-          event={room.incomingEvent}
+          event={incomingEvent!}
           hasShield={game.state.hasShield}
           multiplier={multiplier}
           onDrink={game.addDrinks}
           onUseShield={() => { game.useShield(); showToast('Escudo usado! 🛡️'); }}
           onDismiss={room.dismissEvent}
         />
+      )}
+
+      {/* Minigame modal para guests (host encerrou o turno) */}
+      {appMode === 'sala' && isMinigameEvent && room.status === 'playing' && !room.isHost && (
+        <MinigameModal
+          mode="guest"
+          turn={incomingEvent!.turn ?? game.state.turn}
+          multiplier={multiplier}
+          hostName={incomingEvent!.fromPlayerName}
+          format={incomingEvent!.minigameFormat}
+          onConfirm={handleGuestMinigameConfirm}
+          onClose={room.dismissEvent}
+        />
+      )}
+
+      {/* Reconectando... */}
+      {room.isReconnecting && (
+        <div className="fixed inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center gap-3">
+          <div className="text-3xl animate-spin">🔄</div>
+          <div className="text-white font-semibold">Reconectando à sala...</div>
+        </div>
       )}
 
       {/* ── Mode select ── */}
@@ -111,8 +170,6 @@ export default function App() {
       )}
 
       {/* ── Sala ── */}
-
-      {/* 1. Entrar/criar sala */}
       {appMode === 'sala' && (room.status === 'idle' || room.status === 'connecting' || room.status === 'error') && (
         <RoomEntry
           error={room.error}
@@ -123,7 +180,6 @@ export default function App() {
         />
       )}
 
-      {/* 2. Escolher personagem dentro da sala (vê personagens bloqueados em tempo real) */}
       {appMode === 'sala' && room.status === 'lobby' && !game.state.character && (
         <CharacterSelect
           onStart={handleRoomCharacterSelect}
@@ -132,7 +188,6 @@ export default function App() {
         />
       )}
 
-      {/* 3. Lobby (personagem já escolhido, aguardando host) */}
       {appMode === 'sala' && room.status === 'lobby' && game.state.character && room.roomCode && (
         <Lobby
           roomCode={room.roomCode}
@@ -144,7 +199,6 @@ export default function App() {
         />
       )}
 
-      {/* 4. Jogo */}
       {appMode === 'sala' && room.status === 'playing' && game.state.character && (
         <GameTracker
           {...commonGameProps}
@@ -153,6 +207,7 @@ export default function App() {
           roomPlayers={room.players}
           roomCode={room.roomCode ?? undefined}
           roomPlayerId={room.playerId}
+          isHost={room.isHost}
         />
       )}
     </>

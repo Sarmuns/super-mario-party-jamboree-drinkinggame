@@ -56,11 +56,13 @@ export interface RoomPlayer {
 }
 
 export interface RoomEvent {
-  type: 'drinks_all' | 'drinks_others';
+  type: 'drinks_all' | 'drinks_others' | 'minigame_start';
   fromPlayerId: string;
   fromPlayerName: string;
   message: string;
   drinks: number;
+  turn?: number;
+  minigameFormat?: string;
 }
 
 export type RoomStatus = 'idle' | 'connecting' | 'lobby' | 'playing' | 'error';
