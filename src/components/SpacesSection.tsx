@@ -61,7 +61,8 @@ export function SpacesSection({ multiplier, hasShield, characterName, characterC
           onDrink={(count) => handleDrink(count, activeSpace.name_pt)}
           onUseShield={() => handleShield(activeSpace.name_pt)}
           onClose={() => setActiveSpace(null)}
-          onBroadcast={onBroadcast} />
+          onBroadcast={onBroadcast}
+          onLog={onActivity} />
       )}
     </section>
   );

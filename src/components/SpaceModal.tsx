@@ -2,22 +2,26 @@ import { useEffect, useState } from 'react';
 import type { Space, RoomEvent } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
 
+const SPACE_EMOJI: Record<string, string> = {
+  blue: '🔵', red: '🔴', lucky: '🍀', unlucky: '💜',
+  event: '🎪', item: '🎁', bowser: '👹', chance_time: '🎲', vs: '⚔️',
+};
+
 interface Props {
   space: Space;
   multiplier: number;
   hasShield: boolean;
   characterName?: string;
+  characterColor?: string;
   roomPlayerId?: string;
   isRoomMode?: boolean;
   onDrink: (count: number) => void;
   onUseShield: () => void;
   onClose: () => void;
   onBroadcast?: (event: RoomEvent) => void;
-  // characterColor unused here but accepted to avoid TS error from parent
-  characterColor?: string;
+  onLog?: (emoji: string, message: string) => void;
 }
 
-// Casas com efeito coletivo (afetam outros jogadores)
 function isCollective(space: Space) {
   return !!space.drinks_all || space.drinks_others !== undefined;
 }
@@ -25,7 +29,7 @@ function isCollective(space: Space) {
 export function SpaceModal({
   space, multiplier, hasShield,
   characterName, roomPlayerId, isRoomMode,
-  onDrink, onUseShield, onClose, onBroadcast,
+  onDrink, onUseShield, onClose, onBroadcast, onLog,
 }: Props) {
   const [step, setStep] = useState<'main' | 'prejudicado'>('main');
 
@@ -35,23 +39,15 @@ export function SpaceModal({
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Quanto EU bebo (apenas para eventos pessoais ou drinks_all)
   const selfBase = typeof space.drinks === 'number' ? space.drinks : 0;
   const selfDrinks = selfBase * multiplier;
-
-  // Quanto OS OUTROS bebem
   const othersDrinks = (space.drinks_others ?? 0) * multiplier;
-
-  // É VS Space (regra especial)
   const isSpecialRule = typeof space.drinks === 'string';
-
-  // Bônus condicional (ex: Chance Time prejudicado, Bowser perdeu estrela)
   const conditional = space.drinks_conditional;
   const conditionalIsNumeric = typeof conditional?.drinks === 'number';
-
-  // Apenas Lucky Space e Chance Time têm broadcast (afetam outros)
   const hasCollectiveEffect = isCollective(space);
   const notifiesOthers = isRoomMode && hasCollectiveEffect && !!onBroadcast;
+  const spaceEmoji = SPACE_EMOJI[space.id] ?? '🏠';
 
   function fireBroadcast() {
     if (!onBroadcast || !characterName || !hasCollectiveEffect) return;
@@ -66,32 +62,39 @@ export function SpaceModal({
     });
   }
 
+  function fireLog(extra = '') {
+    if (!onLog || !characterName) return;
+    const drinkPart = selfDrinks > 0 ? ` — bebeu ${selfDrinks} gole${selfDrinks !== 1 ? 's' : ''}` : '';
+    const othersPart = othersDrinks > 0 && !selfDrinks ? ` — os outros bebem ${othersDrinks}` : '';
+    const safePart = selfDrinks === 0 && !hasCollectiveEffect ? ' — seguro!' : '';
+    onLog(spaceEmoji, `${space.name_pt}${drinkPart}${othersPart}${safePart}${extra}`);
+  }
+
   function handleConfirm() {
     if (selfDrinks > 0) onDrink(selfDrinks);
     fireBroadcast();
-    // Chance Time: perguntar se saiu prejudicado
-    if (space.id === 'chance_time') {
-      setStep('prejudicado');
-      return;
-    }
+    fireLog();
+    if (space.id === 'chance_time') { setStep('prejudicado'); return; }
     onClose();
   }
 
   function handleShield() {
     onUseShield();
-    // Se evento coletivo, os outros ainda bebem mesmo com escudo
     fireBroadcast();
+    fireLog(' (escudo usado)');
     onClose();
   }
 
   function handlePrejudicado(foi: boolean) {
     if (foi && conditionalIsNumeric) {
-      onDrink((conditional!.drinks as number) * multiplier);
+      const extra = (conditional!.drinks as number) * multiplier;
+      onDrink(extra);
+      onLog?.(spaceEmoji, `${space.name_pt} — saiu prejudicado (+${extra} goles)`);
     }
     onClose();
   }
 
-  // ── Step: prejudicado (Chance Time follow-up) ──
+  // ── Step: prejudicado ──
   if (step === 'prejudicado') {
     const extraDrinks = conditionalIsNumeric ? (conditional!.drinks as number) * multiplier : 1;
     return (
@@ -177,7 +180,7 @@ export function SpaceModal({
             </div>
 
             {/* Consequências */}
-            {!isSpecialRule && (selfDrinks > 0 || othersDrinks > 0) && (
+            {!isSpecialRule && (
               <div className="rounded-2xl bg-gray-700/50 p-4 space-y-3">
                 <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">Consequências</div>
 
@@ -196,7 +199,7 @@ export function SpaceModal({
                 {selfDrinks === 0 && !space.drinks_all && (
                   <div className="flex items-center gap-3">
                     <span className="text-xl">✅</span>
-                    <div className="text-sm text-gray-400">Você não bebe</div>
+                    <div className="text-sm text-gray-400">Você não bebe — seguro!</div>
                   </div>
                 )}
 
@@ -207,7 +210,7 @@ export function SpaceModal({
                       <div className="text-sm font-bold text-white">
                         {space.drinks_all ? 'Todo mundo bebe' : 'Os outros bebem'}
                       </div>
-                      {notifiesOthers && <div className="text-xs text-yellow-400">🔔 Eles vão receber uma notificação</div>}
+                      {notifiesOthers && <div className="text-xs text-yellow-400">🔔 Eles receberão uma notificação</div>}
                     </div>
                     <div className="text-right">
                       <span className="text-2xl font-black text-white">{othersDrinks}</span>
@@ -218,8 +221,8 @@ export function SpaceModal({
 
                 {conditionalIsNumeric && (
                   <div className="pt-2 border-t border-gray-600 text-xs text-yellow-400">
-                    + {conditional!.condition}: bebe mais {(conditional!.drinks as number) * multiplier} gole{(conditional!.drinks as number) * multiplier !== 1 ? 's' : ''}
-                    {space.id === 'chance_time' ? ' (vai perguntar depois)' : ''}
+                    + {conditional!.condition}: {(conditional!.drinks as number) * multiplier} goles extras
+                    {space.id === 'chance_time' ? ' (perguntará depois)' : ''}
                   </div>
                 )}
               </div>
@@ -234,24 +237,31 @@ export function SpaceModal({
 
             {/* Botões */}
             <div className="flex flex-col gap-3">
+              {/* Escudo */}
               {hasShield && selfDrinks > 0 && (
                 <button onClick={handleShield}
                   className="w-full py-4 rounded-2xl text-base font-bold text-yellow-400 border-2 border-yellow-500/60 bg-yellow-500/10 active:scale-95 transition-transform">
-                  Usar escudo 🛡️ — {notifiesOthers && othersDrinks > 0 ? 'Pulei, mas vou notificar os outros' : 'Dose pulada!'}
+                  Usar escudo 🛡️ — {notifiesOthers && othersDrinks > 0 ? 'Pulei, mas notifico os outros' : 'Dose pulada!'}
                 </button>
               )}
 
-              {!isSpecialRule && (selfDrinks > 0 || hasCollectiveEffect) && (
+              {/* Confirmar — aparece para TODAS as casas não-VS */}
+              {!isSpecialRule && (
                 <button onClick={handleConfirm}
                   className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
-                  style={{ backgroundColor: space.color }}>
-                  {selfDrinks > 0 && notifiesOthers ? `Beber ${selfDrinks} e notificar sala 🔔` :
-                   selfDrinks > 0 ? `Beber! 🍺 (${selfDrinks} gole${selfDrinks !== 1 ? 's' : ''})` :
-                   notifiesOthers ? 'Confirmar — notificar outros 🔔' : 'Confirmar'}
+                  style={{ backgroundColor: selfDrinks > 0 || hasCollectiveEffect ? space.color : '#374151' }}>
+                  {selfDrinks > 0 && notifiesOthers
+                    ? `Beber ${selfDrinks} e notificar sala 🔔`
+                    : selfDrinks > 0
+                    ? `Beber! 🍺 (${selfDrinks} gole${selfDrinks !== 1 ? 's' : ''})`
+                    : notifiesOthers
+                    ? 'Confirmar — notificar outros 🔔'
+                    : '✅ Confirmar — registrar no log'}
                 </button>
               )}
 
-              {(isSpecialRule || (selfDrinks === 0 && !hasCollectiveEffect)) && (
+              {/* Fechar só para VS Space */}
+              {isSpecialRule && (
                 <button onClick={onClose}
                   className="w-full py-4 rounded-2xl text-base font-bold text-white bg-gray-700 active:scale-95 transition-transform">
                   Fechar

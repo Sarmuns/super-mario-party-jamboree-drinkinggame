@@ -53,11 +53,12 @@ export interface RoomPlayer {
   hasShield: boolean;
   isHost: boolean;
   joinedAt: number;
-  gameStatus?: 'lobby' | 'playing'; // só o host preenche isso
+  trackTimestamp?: number;   // usado para deduplicação no sync
+  gameStatus?: 'lobby' | 'playing';
 }
 
 export interface RoomEvent {
-  type: 'drinks_all' | 'drinks_others' | 'minigame_start' | 'activity';
+  type: 'drinks_all' | 'drinks_others' | 'minigame_prebrew' | 'minigame_start' | 'activity';
   fromPlayerId: string;
   fromPlayerName: string;
   characterColor: string;

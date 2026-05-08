@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Props {
   src: string | null;
@@ -10,6 +10,11 @@ interface Props {
 
 export function ImageWithFallback({ src, alt, fallbackChar, fallbackColor, className = '' }: Props) {
   const [failed, setFailed] = useState(!src);
+
+  // Reseta o estado quando a src muda (evita ficar travado no fallback)
+  useEffect(() => {
+    setFailed(!src);
+  }, [src]);
 
   if (failed || !src) {
     return (
@@ -28,7 +33,6 @@ export function ImageWithFallback({ src, alt, fallbackChar, fallbackColor, class
       src={src}
       alt={alt}
       className={className}
-      loading="lazy"
       onError={() => setFailed(true)}
     />
   );

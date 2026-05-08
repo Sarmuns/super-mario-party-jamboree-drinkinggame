@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { useRoom } from './hooks/useRoom';
 import { useToast } from './hooks/useToast';
+import { useLog } from './hooks/useLog';
 import { ModeSelector } from './components/ModeSelector';
 import { CharacterSelect } from './components/CharacterSelect';
 import { RoomEntry } from './components/RoomEntry';
@@ -22,15 +23,14 @@ export default function App() {
   const game = useGameState();
   const room = useRoom();
   const { toasts, showToast, dismissToast } = useToast();
+  const { entries: logEntries, addEntry: addToLog } = useLog();
 
   // Tenta reconectar à sala ao abrir o app
   useEffect(() => {
     const session = room.loadSession();
     if (!session || appMode !== 'sala') return;
     if (room.status !== 'idle') return;
-
-    const savedState = myStateFromGame();
-    room.reconnect(session, savedState).then(ok => {
+    room.reconnect(session, myStateFromGame()).then(ok => {
       if (!ok) setMode('select');
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -39,18 +39,12 @@ export default function App() {
     const c = game.state.character;
     if (!c) return {};
     return {
-      name: c.name,
-      characterId: c.id,
-      characterColor: c.color,
-      characterIcon: c.icon_url,
-      characterPortrait: c.portrait_url,
-      totalDrinks: game.state.totalDrinks,
-      stars: game.state.stars,
-      hasShield: game.state.hasShield,
+      name: c.name, characterId: c.id, characterColor: c.color,
+      characterIcon: c.icon_url, characterPortrait: c.portrait_url,
+      totalDrinks: game.state.totalDrinks, stars: game.state.stars, hasShield: game.state.hasShield,
     };
   }
 
-  // Accent color from character
   useEffect(() => {
     const color = game.state.character?.color ?? '#6366f1';
     document.documentElement.style.setProperty('--accent', color);
@@ -60,7 +54,6 @@ export default function App() {
     document.documentElement.style.setProperty('--accent-rgb', `${r} ${g} ${b}`);
   }, [game.state.character?.color]);
 
-  // Sync local game state → Supabase Presence
   useEffect(() => {
     if (appMode !== 'sala' || room.status !== 'playing') return;
     room.updateMyState({
@@ -86,24 +79,72 @@ export default function App() {
     await room.selectRoomCharacter(character);
   }
 
+  // Log local: chamado pelo GameTracker para ações do próprio jogador
+  function handleLog(emoji: string, message: string) {
+    addToLog({
+      emoji, message,
+      playerName: game.state.character?.name ?? 'Você',
+      playerColor: game.state.character?.color ?? '#6366f1',
+      source: 'self',
+    });
+  }
+
   const multiplier = (game.state.isHomestretch ? 2 : 1) * (game.state.isJamboree ? 2 : 1);
+  // Estado do minigame para guests
+  const [guestMinigame, setGuestMinigame] = useState<{
+    phase: 'prebrew' | 'waiting' | 'result';
+    hostName: string;
+    turn: number;
+    format?: string;
+  } | null>(null);
 
-  // Evento incoming: minigame_start abre modal próprio, outros vão pro IncomingEventModal
   const incomingEvent = room.incomingEvent;
-  const isMinigameEvent = incomingEvent?.type === 'minigame_start';
   const isActivityEvent = incomingEvent?.type === 'activity';
-  const isDrinkEvent = incomingEvent && !isMinigameEvent && !isActivityEvent;
+  const isDrinkEvent = incomingEvent && incomingEvent.type !== 'activity'
+    && incomingEvent.type !== 'minigame_prebrew'
+    && incomingEvent.type !== 'minigame_start';
 
-  // Activity events viram toast e são descartados imediatamente
+  // Activity → toast + log
   if (isActivityEvent && incomingEvent) {
     showToast(`${incomingEvent.emoji ?? '💬'} ${incomingEvent.message}`);
+    addToLog({
+      emoji: incomingEvent.emoji ?? '💬',
+      message: incomingEvent.message,
+      playerName: incomingEvent.fromPlayerName,
+      playerColor: incomingEvent.characterColor,
+      source: 'room',
+    });
     room.dismissEvent();
   }
 
-  function handleGuestMinigameConfirm(drinks: number) {
-    game.addDrinks(drinks);
+  // Minigame prebrew → fase 1 do guest
+  if (incomingEvent?.type === 'minigame_prebrew' && !room.isHost) {
+    setGuestMinigame({ phase: 'prebrew', hostName: incomingEvent.fromPlayerName, turn: incomingEvent.turn ?? game.state.turn });
     room.dismissEvent();
-    showToast(`🎮 Minigame! 🍺 +${drinks}`);
+  }
+
+  // Minigame start (formato enviado pelo host) → fase 3 do guest
+  if (incomingEvent?.type === 'minigame_start' && !room.isHost) {
+    setGuestMinigame(prev => prev
+      ? { ...prev, phase: 'result', format: incomingEvent.minigameFormat }
+      : { phase: 'result', hostName: incomingEvent.fromPlayerName, turn: incomingEvent.turn ?? game.state.turn, format: incomingEvent.minigameFormat }
+    );
+    room.dismissEvent();
+  }
+
+  function handleGuestPrebrew(drinks: number) {
+    game.addDrinks(drinks);
+    addToLog({ emoji: '🍺', message: `Pré-minigame — bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
+    showToast(`🍺 +${drinks} (pré-minigame)`);
+    setGuestMinigame(prev => prev ? { ...prev, phase: 'waiting' } : null);
+  }
+
+  function handleGuestResult(drinks: number) {
+    if (drinks > 0) game.addDrinks(drinks);
+    addToLog({ emoji: '🎮', message: `Minigame ${drinks > 0 ? '— perdi, bebeu ' + drinks : '— ganhei!'}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
+    if (drinks > 0) showToast(`😅 Perdeu! 🍺 +${drinks}`);
+    else showToast('🏆 Ganhou o minigame!');
+    setGuestMinigame(null);
   }
 
   const commonGameProps = {
@@ -115,6 +156,7 @@ export default function App() {
     stars: game.state.stars,
     turn: game.state.turn,
     canUndo: game.canUndo,
+    logEntries,
     onDrink: game.addDrinks,
     onActivateShield: game.activateShield,
     onUseShield: game.useShield,
@@ -123,6 +165,7 @@ export default function App() {
     onToggleJamboree: game.toggleJamboree,
     onAddStars: game.addStars,
     onIncrementTurn: game.incrementTurn,
+    onLog: handleLog,
     showToast,
   };
 
@@ -130,7 +173,6 @@ export default function App() {
     <>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Drink event modal (Lucky Space, Chance Time etc.) */}
       {appMode === 'sala' && isDrinkEvent && room.status === 'playing' && (
         <IncomingEventModal
           event={incomingEvent!}
@@ -142,20 +184,21 @@ export default function App() {
         />
       )}
 
-      {/* Minigame modal para guests (host encerrou o turno) */}
-      {appMode === 'sala' && isMinigameEvent && room.status === 'playing' && !room.isHost && (
+      {/* Guest minigame modal — fases: prebrew → waiting → result */}
+      {appMode === 'sala' && guestMinigame && room.status === 'playing' && !room.isHost && (
         <MinigameModal
           mode="guest"
-          turn={incomingEvent!.turn ?? game.state.turn}
+          turn={guestMinigame.turn}
           multiplier={multiplier}
-          hostName={incomingEvent!.fromPlayerName}
-          format={incomingEvent!.minigameFormat}
-          onConfirm={handleGuestMinigameConfirm}
-          onClose={room.dismissEvent}
+          hostName={guestMinigame.hostName}
+          phase={guestMinigame.phase}
+          format={guestMinigame.format}
+          onConfirmPrebrew={handleGuestPrebrew}
+          onConfirmResult={handleGuestResult}
+          onClose={() => setGuestMinigame(null)}
         />
       )}
 
-      {/* Reconectando... */}
       {room.isReconnecting && (
         <div className="fixed inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center gap-3">
           <div className="text-3xl animate-spin">🔄</div>
@@ -163,12 +206,10 @@ export default function App() {
         </div>
       )}
 
-      {/* ── Mode select ── */}
       {appMode === 'select' && (
         <ModeSelector onOffline={() => setMode('offline')} onSala={() => setMode('sala')} />
       )}
 
-      {/* ── Offline ── */}
       {appMode === 'offline' && !game.state.character && (
         <CharacterSelect onStart={game.selectCharacter} />
       )}
@@ -176,7 +217,6 @@ export default function App() {
         <GameTracker {...commonGameProps} onReset={() => { game.resetGame(); setMode('select'); }} onBroadcast={undefined} />
       )}
 
-      {/* ── Sala ── */}
       {appMode === 'sala' && (room.status === 'idle' || room.status === 'connecting' || room.status === 'error') && (
         <RoomEntry
           error={room.error}

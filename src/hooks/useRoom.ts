@@ -64,8 +64,16 @@ export function useRoom() {
     const byPlayer = new Map<string, RoomPlayer>();
     for (const p of all) {
       const existing = byPlayer.get(p.playerId);
-      if (!existing || (p.characterId && !existing.characterId)) {
+      if (!existing) {
         byPlayer.set(p.playerId, p);
+      } else if (p.characterId && !existing.characterId) {
+        // tem personagem, outro não → prefere este
+        byPlayer.set(p.playerId, p);
+      } else if (p.characterId && existing.characterId) {
+        // ambos têm personagem → trackTimestamp decide qual é o mais recente
+        if ((p.trackTimestamp ?? 0) > (existing.trackTimestamp ?? 0)) {
+          byPlayer.set(p.playerId, p);
+        }
       }
     }
     const deduped = Array.from(byPlayer.values()).sort((a, b) => a.joinedAt - b.joinedAt);
@@ -87,8 +95,9 @@ export function useRoom() {
   }
 
   async function trackPlayer(channel: RealtimeChannel, playerState: RoomPlayer) {
-    myStateRef.current = playerState;
-    await channel.track(playerState);
+    const stamped = { ...playerState, trackTimestamp: Date.now() };
+    myStateRef.current = stamped;
+    await channel.track(stamped);
   }
 
   // Reconecta a uma sala existente (chamada ao voltar do background ou recarregar)

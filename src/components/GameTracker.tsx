@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Character, RoomPlayer, RoomEvent } from '../types';
+import type { LogEntry } from '../hooks/useLog';
 import { Header } from './Header';
 import { SpacesSection } from './SpacesSection';
 import { DiceSection } from './DiceSection';
@@ -9,6 +10,7 @@ import { EndGameModal } from './EndGameModal';
 import { MinigameModal } from './MinigameModal';
 import { PlayersOverlay } from './PlayersOverlay';
 import { PlayersStrip } from './PlayersStrip';
+import { LogTab } from './LogTab';
 
 interface Props {
   character: Character;
@@ -19,6 +21,7 @@ interface Props {
   stars: number;
   turn: number;
   canUndo: boolean;
+  logEntries: LogEntry[];
   roomPlayers?: RoomPlayer[];
   roomCode?: string;
   roomPlayerId?: string;
@@ -33,17 +36,19 @@ interface Props {
   onAddStars: (delta: number) => void;
   onIncrementTurn: () => void;
   onReset: () => void;
+  onLog: (emoji: string, message: string) => void;
   showToast: (msg: string) => void;
 }
 
 export function GameTracker({
   character, totalDrinks, hasShield, isHomestretch, isJamboree,
-  stars, turn, canUndo,
+  stars, turn, canUndo, logEntries,
   roomPlayers, roomCode, roomPlayerId, isHost, onBroadcast,
   onDrink, onActivateShield, onUseShield, onUndo,
   onToggleHomestretch, onToggleJamboree, onAddStars, onIncrementTurn,
-  onReset, showToast,
+  onReset, onLog, showToast,
 }: Props) {
+  const [activeTab, setActiveTab] = useState<'game' | 'log'>('game');
   const [showEndGame, setShowEndGame] = useState(false);
   const [showMinigame, setShowMinigame] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
@@ -51,7 +56,6 @@ export function GameTracker({
   const multiplier = (isHomestretch ? 2 : 1) * (isJamboree ? 2 : 1);
   const isRoomMode = !!roomPlayers;
 
-  // Broadcast informacional para os outros (não exige ação)
   const sendActivity = useCallback((emoji: string, msg: string) => {
     if (!onBroadcast) return;
     onBroadcast({
@@ -65,13 +69,20 @@ export function GameTracker({
     });
   }, [onBroadcast, roomPlayerId, character.name, character.color]);
 
+  // Log local + broadcast activity
+  function logAndBroadcast(emoji: string, msg: string) {
+    onLog(emoji, msg);
+    sendActivity(emoji, msg);
+  }
+
   function handleRoll1() {
     if (hasShield) {
       showToast('Já tem escudo! 🛡️');
+      onLog('🛡️', 'Tentou tirar escudo, mas já tem um');
     } else {
       onActivateShield();
       showToast('Escudo ativado! 🛡️');
-      sendActivity('🛡️', `${character.name} ativou o escudo`);
+      logAndBroadcast('🛡️', 'Tirou 1 no dado — escudo ativado');
     }
   }
 
@@ -79,27 +90,40 @@ export function GameTracker({
     const count = 1 * multiplier;
     onDrink(count);
     showToast(`Imposto da sorte! 🎰 +${count} gole${count !== 1 ? 's' : ''}`);
-    sendActivity('🎰', `${character.name} tirou 10 — bebeu ${count} gole${count !== 1 ? 's' : ''}`);
+    logAndBroadcast('🎰', `Tirou 10 no dado — pagou ${count} gole${count !== 1 ? 's' : ''}`);
   }
 
   function handleUseShieldFromHeader() {
     onUseShield();
     showToast('Escudo usado! 🛡️ Comunique à mesa.');
-    sendActivity('🛡️', `${character.name} usou o escudo`);
+    logAndBroadcast('🛡️', 'Usou o escudo manualmente');
   }
 
-  function handleMinigameConfirm(drinks: number, format: string) {
-    onDrink(drinks);
-    onIncrementTurn();
-    setShowMinigame(false);
-    showToast(`🎮 Turno ${turn} encerrado! 🍺 +${drinks}`);
+  // Host clicou em "Fim do Turno" → broadcast prebrew imediato
+  function handleMinigameOpen() {
+    setShowMinigame(true);
+    if (onBroadcast) {
+      onBroadcast({
+        type: 'minigame_prebrew',
+        fromPlayerId: roomPlayerId ?? '',
+        fromPlayerName: character.name,
+        characterColor: character.color,
+        message: `${character.name} encerrou o Turno ${turn} — beba antes do minigame!`,
+        drinks: 1,
+        turn,
+      });
+    }
+  }
+
+  // Host selecionou formato → broadcast para guests entrarem na fase de resultado
+  function handleStartMinigame(format: string) {
     if (onBroadcast) {
       onBroadcast({
         type: 'minigame_start',
         fromPlayerId: roomPlayerId ?? '',
         fromPlayerName: character.name,
         characterColor: character.color,
-        message: `${character.name} encerrou o Turno ${turn}!`,
+        message: `Formato: ${format.toUpperCase()}`,
         drinks: 1,
         turn,
         minigameFormat: format,
@@ -107,10 +131,25 @@ export function GameTracker({
     }
   }
 
+  function handleMinigameConfirm(drinks: number, format: string) {
+    onDrink(drinks);
+    onIncrementTurn();
+    setShowMinigame(false);
+    showToast(`🎮 Turno ${turn} encerrado! 🍺 +${drinks}`);
+    logAndBroadcast('🎮', `Encerrou Turno ${turn} — ${format.toUpperCase()} — bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`);
+  }
+
   function handleMinigameSkip() {
     onIncrementTurn();
     setShowMinigame(false);
     showToast(`Turno ${turn} encerrado`);
+    onLog('🎮', `Turno ${turn} encerrado (minigame pulado)`);
+  }
+
+  function handleAddOne() {
+    onDrink(1);
+    showToast('🍺 +1');
+    logAndBroadcast('🍺', 'Bebeu 1 gole avulso');
   }
 
   return (
@@ -121,54 +160,84 @@ export function GameTracker({
         roomPlayerCount={roomPlayers?.length}
         onUseShield={handleUseShieldFromHeader} onToggleHomestretch={onToggleHomestretch}
         onToggleJamboree={onToggleJamboree} onReset={onReset} onUndo={onUndo}
-        onAddOne={() => { onDrink(1); showToast('🍺 +1'); sendActivity('🍺', `${character.name} bebeu 1 gole`); }}
+        onAddOne={handleAddOne}
         onShowPlayers={isRoomMode ? () => setShowPlayers(true) : undefined}
       />
 
-      {/* Faixa de outros jogadores — só em sala */}
       {isRoomMode && roomPlayers && roomPlayerId && (
         <PlayersStrip players={roomPlayers} myPlayerId={roomPlayerId} />
       )}
 
-      <div className="flex-1 overflow-y-auto divide-y divide-gray-800">
-        <SpacesSection multiplier={multiplier} hasShield={hasShield}
-          onDrink={onDrink} onUseShield={onUseShield} showToast={showToast}
-          onBroadcast={onBroadcast} isRoomMode={isRoomMode}
-          characterName={character.name} characterColor={character.color}
-          roomPlayerId={roomPlayerId} onActivity={sendActivity}
-        />
-
-        <DiceSection hasShield={hasShield} multiplier={multiplier}
-          onRoll1={handleRoll1} onRoll10={handleRoll10} />
-
-        <StarsSection multiplier={multiplier} onDrink={onDrink}
-          onStarChange={onAddStars} showToast={showToast}
-          onActivity={sendActivity} characterName={character.name} />
-
-        <RulesSection />
-
-        <div className="px-4 py-6 flex flex-col gap-3">
-          {(!isRoomMode || isHost) && (
-            <button onClick={() => setShowMinigame(true)}
-              className="w-full py-4 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform"
-              style={{ backgroundColor: 'var(--accent)', opacity: 0.9 }}>
-              🎮 Fim do Turno {turn}
-            </button>
+      {/* Tabs */}
+      <div className="flex border-b border-gray-800 bg-gray-900 shrink-0">
+        <button
+          onClick={() => setActiveTab('game')}
+          className="flex-1 py-2.5 text-sm font-semibold transition-colors"
+          style={activeTab === 'game'
+            ? { color: 'var(--accent)', borderBottom: '2px solid var(--accent)' }
+            : { color: '#6b7280' }}>
+          🎮 Jogo
+        </button>
+        <button
+          onClick={() => setActiveTab('log')}
+          className="flex-1 py-2.5 text-sm font-semibold transition-colors relative"
+          style={activeTab === 'log'
+            ? { color: 'var(--accent)', borderBottom: '2px solid var(--accent)' }
+            : { color: '#6b7280' }}>
+          📋 Log
+          {activeTab === 'game' && logEntries.length > 0 && (
+            <span className="absolute top-1.5 right-6 w-2 h-2 rounded-full bg-red-500" />
           )}
-          {isRoomMode && !isHost && (
-            <div className="text-center text-xs text-gray-600 py-2">
-              Aguardando o host encerrar o turno...
+        </button>
+      </div>
+
+      {/* Conteúdo da aba */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === 'game' ? (
+          <div className="divide-y divide-gray-800">
+            <SpacesSection multiplier={multiplier} hasShield={hasShield}
+              onDrink={onDrink} onUseShield={onUseShield} showToast={showToast}
+              onBroadcast={onBroadcast} isRoomMode={isRoomMode}
+              characterName={character.name} characterColor={character.color}
+              roomPlayerId={roomPlayerId} onActivity={logAndBroadcast}
+            />
+
+            <DiceSection hasShield={hasShield} multiplier={multiplier}
+              onRoll1={handleRoll1} onRoll10={handleRoll10} />
+
+            <StarsSection multiplier={multiplier} onDrink={onDrink}
+              onStarChange={onAddStars} showToast={showToast}
+              onActivity={logAndBroadcast} characterName={character.name} />
+
+            <RulesSection />
+
+            <div className="px-4 py-6 flex flex-col gap-3">
+              {(!isRoomMode || isHost) && (
+                <button onClick={isRoomMode ? handleMinigameOpen : () => setShowMinigame(true)}
+                  className="w-full py-4 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform"
+                  style={{ backgroundColor: 'var(--accent)', opacity: 0.9 }}>
+                  🎮 Fim do Turno {turn}
+                </button>
+              )}
+              {isRoomMode && !isHost && (
+                <div className="text-center text-xs text-gray-600 py-2">
+                  Aguardando o host encerrar o turno...
+                </div>
+              )}
+              <button onClick={() => setShowEndGame(true)}
+                className="w-full py-3 rounded-2xl text-sm font-bold text-gray-400 border border-gray-700 bg-gray-800/60 active:scale-95 transition-transform">
+                🏁 Fim de Partida
+              </button>
             </div>
-          )}
-          <button onClick={() => setShowEndGame(true)}
-            className="w-full py-3 rounded-2xl text-sm font-bold text-gray-400 border border-gray-700 bg-gray-800/60 active:scale-95 transition-transform">
-            🏁 Fim de Partida
-          </button>
-        </div>
+          </div>
+        ) : (
+          <LogTab entries={logEntries} />
+        )}
       </div>
 
       {showMinigame && (
         <MinigameModal mode="host" turn={turn} multiplier={multiplier}
+          onStartMinigame={handleStartMinigame}
           onConfirm={handleMinigameConfirm} onClose={handleMinigameSkip} />
       )}
 
