@@ -13,25 +13,29 @@ interface Props {
   multiplier: number;
   hasShield: boolean;
   characterName?: string;
+  characterColor?: string;
   roomPlayerId?: string;
   isRoomMode?: boolean;
   onDrink: (count: number) => void;
   onUseShield: () => void;
   showToast: (msg: string) => void;
   onBroadcast?: (event: RoomEvent) => void;
+  onActivity?: (emoji: string, msg: string) => void;
 }
 
-export function SpacesSection({ multiplier, hasShield, characterName, roomPlayerId, isRoomMode, onDrink, onUseShield, showToast, onBroadcast }: Props) {
+export function SpacesSection({ multiplier, hasShield, characterName, characterColor, roomPlayerId, isRoomMode, onDrink, onUseShield, showToast, onBroadcast, onActivity }: Props) {
   const [activeSpace, setActiveSpace] = useState<Space | null>(null);
 
-  function handleDrink(count: number) {
+  function handleDrink(count: number, spaceName?: string) {
     onDrink(count);
     showToast(`🍺 +${count} gole${count !== 1 ? 's' : ''}!`);
+    if (spaceName) onActivity?.('🏠', `${characterName} caiu na ${spaceName} — ${count} gole${count !== 1 ? 's' : ''}`);
   }
 
-  function handleShield() {
+  function handleShield(spaceName?: string) {
     onUseShield();
     showToast('Escudo usado! Dose pulada 🛡️');
+    if (spaceName) onActivity?.('🛡️', `${characterName} usou o escudo na ${spaceName}`);
   }
 
   return (
@@ -52,8 +56,11 @@ export function SpacesSection({ multiplier, hasShield, characterName, roomPlayer
 
       {activeSpace && (
         <SpaceModal space={activeSpace} multiplier={multiplier} hasShield={hasShield}
-          characterName={characterName} roomPlayerId={roomPlayerId} isRoomMode={isRoomMode}
-          onDrink={handleDrink} onUseShield={handleShield} onClose={() => setActiveSpace(null)}
+          characterName={characterName} characterColor={characterColor}
+          roomPlayerId={roomPlayerId} isRoomMode={isRoomMode}
+          onDrink={(count) => handleDrink(count, activeSpace.name_pt)}
+          onUseShield={() => handleShield(activeSpace.name_pt)}
+          onClose={() => setActiveSpace(null)}
           onBroadcast={onBroadcast} />
       )}
     </section>

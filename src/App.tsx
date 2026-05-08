@@ -91,7 +91,14 @@ export default function App() {
   // Evento incoming: minigame_start abre modal próprio, outros vão pro IncomingEventModal
   const incomingEvent = room.incomingEvent;
   const isMinigameEvent = incomingEvent?.type === 'minigame_start';
-  const isDrinkEvent = incomingEvent && !isMinigameEvent;
+  const isActivityEvent = incomingEvent?.type === 'activity';
+  const isDrinkEvent = incomingEvent && !isMinigameEvent && !isActivityEvent;
+
+  // Activity events viram toast e são descartados imediatamente
+  if (isActivityEvent && incomingEvent) {
+    showToast(`${incomingEvent.emoji ?? '💬'} ${incomingEvent.message}`);
+    room.dismissEvent();
+  }
 
   function handleGuestMinigameConfirm(drinks: number) {
     game.addDrinks(drinks);

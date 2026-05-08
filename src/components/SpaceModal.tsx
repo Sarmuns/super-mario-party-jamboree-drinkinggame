@@ -13,6 +13,8 @@ interface Props {
   onUseShield: () => void;
   onClose: () => void;
   onBroadcast?: (event: RoomEvent) => void;
+  // characterColor unused here but accepted to avoid TS error from parent
+  characterColor?: string;
 }
 
 // Casas com efeito coletivo (afetam outros jogadores)
@@ -58,6 +60,7 @@ export function SpaceModal({
       type: space.drinks_all ? 'drinks_all' : 'drinks_others',
       fromPlayerId: roomPlayerId ?? '',
       fromPlayerName: characterName,
+      characterColor: space.color,
       message: `${characterName} caiu na ${space.name_pt}!`,
       drinks: typeof othersBase === 'number' ? othersBase : 1,
     });

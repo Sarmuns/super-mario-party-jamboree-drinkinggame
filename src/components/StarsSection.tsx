@@ -1,8 +1,10 @@
 interface Props {
   multiplier: number;
+  characterName?: string;
   onDrink: (count: number) => void;
   onStarChange: (delta: number) => void;
   showToast: (msg: string) => void;
+  onActivity?: (emoji: string, msg: string) => void;
 }
 
 const starEvents = [
@@ -11,13 +13,16 @@ const starEvents = [
   { emoji: '😭', label: 'Passei sem grana', base: 4, starDelta:  0, description: 'Sem as 20 moedas' },
 ];
 
-export function StarsSection({ multiplier, onDrink, onStarChange, showToast }: Props) {
+export function StarsSection({ multiplier, characterName, onDrink, onStarChange, showToast, onActivity }: Props) {
   function handle(ev: typeof starEvents[number]) {
     const count = ev.base * multiplier;
     onDrink(count);
     if (ev.starDelta !== 0) onStarChange(ev.starDelta);
     const starMsg = ev.starDelta > 0 ? ' ⭐+1' : ev.starDelta < 0 ? ' ⭐-1' : '';
     showToast(`${ev.emoji} ${ev.label}: 🍺 ${count} gole${count !== 1 ? 's' : ''}${starMsg}`);
+    if (characterName) {
+      onActivity?.(ev.emoji, `${characterName}: ${ev.label} — ${count} gole${count !== 1 ? 's' : ''}${starMsg}`);
+    }
   }
 
   return (

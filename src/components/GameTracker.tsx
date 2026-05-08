@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { Character, RoomPlayer, RoomEvent } from '../types';
 import { Header } from './Header';
 import { SpacesSection } from './SpacesSection';
@@ -8,6 +8,7 @@ import { RulesSection } from './RulesSection';
 import { EndGameModal } from './EndGameModal';
 import { MinigameModal } from './MinigameModal';
 import { PlayersOverlay } from './PlayersOverlay';
+import { PlayersStrip } from './PlayersStrip';
 
 interface Props {
   character: Character;
@@ -18,13 +19,11 @@ interface Props {
   stars: number;
   turn: number;
   canUndo: boolean;
-  // room (optional — undefined in offline mode)
   roomPlayers?: RoomPlayer[];
   roomCode?: string;
   roomPlayerId?: string;
   isHost?: boolean;
   onBroadcast?: (event: RoomEvent) => void;
-  // callbacks
   onDrink: (count: number) => void;
   onActivateShield: () => void;
   onUseShield: () => void;
@@ -52,20 +51,41 @@ export function GameTracker({
   const multiplier = (isHomestretch ? 2 : 1) * (isJamboree ? 2 : 1);
   const isRoomMode = !!roomPlayers;
 
+  // Broadcast informacional para os outros (não exige ação)
+  const sendActivity = useCallback((emoji: string, msg: string) => {
+    if (!onBroadcast) return;
+    onBroadcast({
+      type: 'activity',
+      fromPlayerId: roomPlayerId ?? '',
+      fromPlayerName: character.name,
+      characterColor: character.color,
+      message: msg,
+      emoji,
+      drinks: 0,
+    });
+  }, [onBroadcast, roomPlayerId, character.name, character.color]);
+
   function handleRoll1() {
-    if (hasShield) { showToast('Já tem escudo! 🛡️'); }
-    else { onActivateShield(); showToast('Escudo ativado! 🛡️'); }
+    if (hasShield) {
+      showToast('Já tem escudo! 🛡️');
+    } else {
+      onActivateShield();
+      showToast('Escudo ativado! 🛡️');
+      sendActivity('🛡️', `${character.name} ativou o escudo`);
+    }
   }
 
   function handleRoll10() {
     const count = 1 * multiplier;
     onDrink(count);
     showToast(`Imposto da sorte! 🎰 +${count} gole${count !== 1 ? 's' : ''}`);
+    sendActivity('🎰', `${character.name} tirou 10 — bebeu ${count} gole${count !== 1 ? 's' : ''}`);
   }
 
   function handleUseShieldFromHeader() {
     onUseShield();
     showToast('Escudo usado! 🛡️ Comunique à mesa.');
+    sendActivity('🛡️', `${character.name} usou o escudo`);
   }
 
   function handleMinigameConfirm(drinks: number, format: string) {
@@ -78,6 +98,7 @@ export function GameTracker({
         type: 'minigame_start',
         fromPlayerId: roomPlayerId ?? '',
         fromPlayerName: character.name,
+        characterColor: character.color,
         message: `${character.name} encerrou o Turno ${turn}!`,
         drinks: 1,
         turn,
@@ -100,22 +121,29 @@ export function GameTracker({
         roomPlayerCount={roomPlayers?.length}
         onUseShield={handleUseShieldFromHeader} onToggleHomestretch={onToggleHomestretch}
         onToggleJamboree={onToggleJamboree} onReset={onReset} onUndo={onUndo}
-        onAddOne={() => { onDrink(1); showToast('🍺 +1'); }}
+        onAddOne={() => { onDrink(1); showToast('🍺 +1'); sendActivity('🍺', `${character.name} bebeu 1 gole`); }}
         onShowPlayers={isRoomMode ? () => setShowPlayers(true) : undefined}
       />
+
+      {/* Faixa de outros jogadores — só em sala */}
+      {isRoomMode && roomPlayers && roomPlayerId && (
+        <PlayersStrip players={roomPlayers} myPlayerId={roomPlayerId} />
+      )}
 
       <div className="flex-1 overflow-y-auto divide-y divide-gray-800">
         <SpacesSection multiplier={multiplier} hasShield={hasShield}
           onDrink={onDrink} onUseShield={onUseShield} showToast={showToast}
           onBroadcast={onBroadcast} isRoomMode={isRoomMode}
-          characterName={character.name} roomPlayerId={roomPlayerId}
+          characterName={character.name} characterColor={character.color}
+          roomPlayerId={roomPlayerId} onActivity={sendActivity}
         />
 
         <DiceSection hasShield={hasShield} multiplier={multiplier}
           onRoll1={handleRoll1} onRoll10={handleRoll10} />
 
         <StarsSection multiplier={multiplier} onDrink={onDrink}
-          onStarChange={onAddStars} showToast={showToast} />
+          onStarChange={onAddStars} showToast={showToast}
+          onActivity={sendActivity} characterName={character.name} />
 
         <RulesSection />
 
@@ -141,8 +169,7 @@ export function GameTracker({
 
       {showMinigame && (
         <MinigameModal mode="host" turn={turn} multiplier={multiplier}
-          onConfirm={handleMinigameConfirm}
-          onClose={handleMinigameSkip} />
+          onConfirm={handleMinigameConfirm} onClose={handleMinigameSkip} />
       )}
 
       {showEndGame && (
@@ -152,8 +179,7 @@ export function GameTracker({
       )}
 
       {showPlayers && roomPlayers && roomCode && roomPlayerId && (
-        <PlayersOverlay
-          players={roomPlayers} playerId={roomPlayerId} roomCode={roomCode}
+        <PlayersOverlay players={roomPlayers} playerId={roomPlayerId} roomCode={roomCode}
           onClose={() => setShowPlayers(false)} />
       )}
     </div>
