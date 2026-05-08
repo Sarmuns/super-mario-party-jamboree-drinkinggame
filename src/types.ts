@@ -53,6 +53,7 @@ export interface RoomPlayer {
   hasShield: boolean;
   isHost: boolean;
   joinedAt: number;
+  gameStatus?: 'lobby' | 'playing'; // só o host preenche isso
 }
 
 export interface RoomEvent {

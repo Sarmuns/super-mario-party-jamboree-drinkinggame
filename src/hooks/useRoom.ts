@@ -129,17 +129,26 @@ export function useRoom() {
             return;
           }
 
+          // Lê o gameStatus da presença do host para determinar
+          // se o jogo já começou (guest pode ter perdido o broadcast game_start)
+          const hostPlayer = Object.values(channel.presenceState<RoomPlayer>())
+            .flat()
+            .find(p => p.isHost && p.playerId !== playerId);
+          const actualStatus: 'lobby' | 'playing' =
+            hostPlayer?.gameStatus ?? session.status;
+
           const state: RoomPlayer = {
             ...PLACEHOLDER,
             ...savedState,
             playerId,
             isHost: session.isHost,
+            gameStatus: session.isHost ? actualStatus : undefined,
             joinedAt: myStateRef.current?.joinedAt ?? Date.now(),
           };
           await trackPlayer(channel, state);
 
           setRoomCode(session.code);
-          setStatus(session.status);
+          setStatus(actualStatus);
           setIsReconnecting(false);
           resolve(true);
         } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') {
@@ -242,6 +251,11 @@ export function useRoom() {
 
   const startGame = useCallback(async () => {
     if (!channelRef.current || !isHost) return;
+    // Atualiza presença do host com gameStatus=playing ANTES do broadcast
+    // Assim guests que reconectarem depois vão ler isso da presença
+    if (myStateRef.current) {
+      await trackPlayer(channelRef.current, { ...myStateRef.current, gameStatus: 'playing' });
+    }
     await channelRef.current.send({ type: 'broadcast', event: 'game_start', payload: {} });
     setStatus('playing');
     const session = loadSession();
