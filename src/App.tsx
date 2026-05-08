@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useGameState } from './hooks/useGameState';
 import { useRoom } from './hooks/useRoom';
 import { useToast } from './hooks/useToast';
@@ -54,13 +54,19 @@ export default function App() {
     document.documentElement.style.setProperty('--accent-rgb', `${r} ${g} ${b}`);
   }, [game.state.character?.color]);
 
+  const syncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (appMode !== 'sala' || room.status !== 'playing') return;
-    room.updateMyState({
-      totalDrinks: game.state.totalDrinks,
-      stars: game.state.stars,
-      hasShield: game.state.hasShield,
-    });
+    // Debounce: agrupa ações rápidas numa única chamada track() para evitar rate limit do Supabase
+    if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current);
+    syncDebounceRef.current = setTimeout(() => {
+      room.updateMyState({
+        totalDrinks: game.state.totalDrinks,
+        stars: game.state.stars,
+        hasShield: game.state.hasShield,
+      });
+    }, 400);
+    return () => { if (syncDebounceRef.current) clearTimeout(syncDebounceRef.current); };
   }, [game.state.totalDrinks, game.state.stars, game.state.hasShield]);
 
   function setMode(mode: AppMode) {
