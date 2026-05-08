@@ -19,7 +19,11 @@ interface Props {
   onUseShield: () => void;
   onClose: () => void;
   onBroadcast?: (event: RoomEvent) => void;
-  onLog?: (emoji: string, message: string) => void;
+  // log local sem broadcast de activity (evita race condition com IncomingEventModal)
+  onLogLocal?: (emoji: string, message: string) => void;
+  // log + broadcast activity (para casas pessoais que notificam via toast)
+  onActivity?: (emoji: string, message: string) => void;
+  onTriggerMinigame?: () => void;
 }
 
 function isCollective(space: Space) {
@@ -29,7 +33,8 @@ function isCollective(space: Space) {
 export function SpaceModal({
   space, multiplier, hasShield,
   characterName, roomPlayerId, isRoomMode,
-  onDrink, onUseShield, onClose, onBroadcast, onLog,
+  onDrink, onUseShield, onClose, onBroadcast,
+  onLogLocal, onActivity, onTriggerMinigame,
 }: Props) {
   const [step, setStep] = useState<'main' | 'prejudicado'>('main');
 
@@ -49,6 +54,13 @@ export function SpaceModal({
   const notifiesOthers = isRoomMode && hasCollectiveEffect && !!onBroadcast;
   const spaceEmoji = SPACE_EMOJI[space.id] ?? '🏠';
 
+  function buildLogMsg(extra = '') {
+    const drinkPart = selfDrinks > 0 ? ` — bebeu ${selfDrinks} gole${selfDrinks !== 1 ? 's' : ''}` : '';
+    const othersPart = othersDrinks > 0 && !selfDrinks ? ` — os outros bebem ${othersDrinks}` : '';
+    const safePart = selfDrinks === 0 && !hasCollectiveEffect ? ' — seguro!' : '';
+    return `${space.name_pt}${drinkPart}${othersPart}${safePart}${extra}`;
+  }
+
   function fireBroadcast() {
     if (!onBroadcast || !characterName || !hasCollectiveEffect) return;
     const othersBase = space.drinks_others ?? (space.drinks_all ? selfBase : 0);
@@ -62,26 +74,31 @@ export function SpaceModal({
     });
   }
 
-  function fireLog(extra = '') {
-    if (!onLog || !characterName) return;
-    const drinkPart = selfDrinks > 0 ? ` — bebeu ${selfDrinks} gole${selfDrinks !== 1 ? 's' : ''}` : '';
-    const othersPart = othersDrinks > 0 && !selfDrinks ? ` — os outros bebem ${othersDrinks}` : '';
-    const safePart = selfDrinks === 0 && !hasCollectiveEffect ? ' — seguro!' : '';
-    onLog(spaceEmoji, `${space.name_pt}${drinkPart}${othersPart}${safePart}${extra}`);
-  }
-
   function handleConfirm() {
     if (selfDrinks > 0) onDrink(selfDrinks);
-    fireBroadcast();
-    fireLog();
+
+    if (hasCollectiveEffect) {
+      // Casas coletivas: envia IncomingEventModal para outros via fireBroadcast
+      // NÃO envia activity broadcast — evita race condition que descartaria o modal
+      fireBroadcast();
+      onLogLocal?.(spaceEmoji, buildLogMsg());
+    } else {
+      // Casas pessoais: loga + notifica outros via toast de activity
+      onActivity?.(spaceEmoji, buildLogMsg());
+    }
+
     if (space.id === 'chance_time') { setStep('prejudicado'); return; }
     onClose();
   }
 
   function handleShield() {
     onUseShield();
-    fireBroadcast();
-    fireLog(' (escudo usado)');
+    if (hasCollectiveEffect) {
+      fireBroadcast(); // outros ainda bebem mesmo com escudo
+      onLogLocal?.(spaceEmoji, buildLogMsg(' (escudo usado)'));
+    } else {
+      onActivity?.(spaceEmoji, buildLogMsg(' (escudo usado)'));
+    }
     onClose();
   }
 
@@ -89,7 +106,7 @@ export function SpaceModal({
     if (foi && conditionalIsNumeric) {
       const extra = (conditional!.drinks as number) * multiplier;
       onDrink(extra);
-      onLog?.(spaceEmoji, `${space.name_pt} — saiu prejudicado (+${extra} goles)`);
+      onLogLocal?.(spaceEmoji, `${space.name_pt} — saiu prejudicado (+${extra} goles)`);
     }
     onClose();
   }
@@ -119,13 +136,11 @@ export function SpaceModal({
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={() => handlePrejudicado(true)}
                   className="py-4 rounded-2xl text-sm font-bold border-2 border-red-500/60 bg-red-900/20 text-red-400 active:scale-95 transition-transform">
-                  😖 Sim, tomei no c*
-                  <div className="text-xs mt-0.5 font-normal">+{extraDrinks} gole{extraDrinks !== 1 ? 's' : ''}</div>
+                  😖 Sim +{extraDrinks}
                 </button>
                 <button onClick={() => handlePrejudicado(false)}
                   className="py-4 rounded-2xl text-sm font-bold border-2 border-green-500/60 bg-green-900/20 text-green-400 active:scale-95 transition-transform">
                   😊 Saí bem
-                  <div className="text-xs mt-0.5 font-normal">sem extra</div>
                 </button>
               </div>
             </div>
@@ -199,7 +214,7 @@ export function SpaceModal({
                 {selfDrinks === 0 && !space.drinks_all && (
                   <div className="flex items-center gap-3">
                     <span className="text-xl">✅</span>
-                    <div className="text-sm text-gray-400">Você não bebe — seguro!</div>
+                    <div className="text-sm text-gray-400">Você não bebe</div>
                   </div>
                 )}
 
@@ -210,7 +225,7 @@ export function SpaceModal({
                       <div className="text-sm font-bold text-white">
                         {space.drinks_all ? 'Todo mundo bebe' : 'Os outros bebem'}
                       </div>
-                      {notifiesOthers && <div className="text-xs text-yellow-400">🔔 Eles receberão uma notificação</div>}
+                      {notifiesOthers && <div className="text-xs text-yellow-400">🔔 Modal aparece no celular deles</div>}
                     </div>
                     <div className="text-right">
                       <span className="text-2xl font-black text-white">{othersDrinks}</span>
@@ -230,8 +245,9 @@ export function SpaceModal({
 
             {/* VS Space */}
             {isSpecialRule && (
-              <div className="rounded-2xl bg-gray-700/50 p-4 text-sm text-gray-300">
-                Segue as regras de minigame. Use o botão <strong className="text-white">Fim do Turno</strong> para registrar.
+              <div className="rounded-2xl bg-gray-700/50 p-4 space-y-2">
+                <div className="text-sm text-white font-semibold">Minigame VS!</div>
+                <div className="text-xs text-gray-400">Todo mundo bebe 1 antes de jogar. Perdedor bebe +1.</div>
               </div>
             )}
 
@@ -245,26 +261,32 @@ export function SpaceModal({
                 </button>
               )}
 
-              {/* Confirmar — aparece para TODAS as casas não-VS */}
+              {/* Confirmar — para todas as casas não-VS */}
               {!isSpecialRule && (
                 <button onClick={handleConfirm}
                   className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
                   style={{ backgroundColor: selfDrinks > 0 || hasCollectiveEffect ? space.color : '#374151' }}>
                   {selfDrinks > 0 && notifiesOthers
-                    ? `Beber ${selfDrinks} e notificar sala 🔔`
+                    ? `Beber ${selfDrinks} — modal aparece nos outros 🔔`
                     : selfDrinks > 0
                     ? `Beber! 🍺 (${selfDrinks} gole${selfDrinks !== 1 ? 's' : ''})`
                     : notifiesOthers
-                    ? 'Confirmar — notificar outros 🔔'
+                    ? 'Confirmar — modal aparece nos outros 🔔'
                     : '✅ Confirmar — registrar no log'}
                 </button>
               )}
 
-              {/* Fechar só para VS Space */}
+              {/* VS Space */}
               {isSpecialRule && (
-                <button onClick={onClose}
-                  className="w-full py-4 rounded-2xl text-base font-bold text-white bg-gray-700 active:scale-95 transition-transform">
-                  Fechar
+                <button
+                  onClick={() => {
+                    onLogLocal?.(spaceEmoji, 'Casa VS — minigame iniciado!');
+                    onTriggerMinigame?.();
+                    onClose();
+                  }}
+                  className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
+                  style={{ backgroundColor: space.color }}>
+                  🎮 Iniciar Minigame VS
                 </button>
               )}
             </div>

@@ -199,7 +199,10 @@ export function GameTracker({
               onDrink={onDrink} onUseShield={onUseShield} showToast={showToast}
               onBroadcast={onBroadcast} isRoomMode={isRoomMode}
               characterName={character.name} characterColor={character.color}
-              roomPlayerId={roomPlayerId} onActivity={logAndBroadcast}
+              roomPlayerId={roomPlayerId}
+              onActivity={logAndBroadcast}
+              onLogLocal={onLog}
+              onTriggerMinigame={isRoomMode ? handleMinigameOpen : () => setShowMinigame(true)}
             />
 
             <DiceSection hasShield={hasShield} multiplier={multiplier}

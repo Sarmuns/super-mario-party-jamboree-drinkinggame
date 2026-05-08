@@ -23,7 +23,7 @@ export default function App() {
   const game = useGameState();
   const room = useRoom();
   const { toasts, showToast, dismissToast } = useToast();
-  const { entries: logEntries, addEntry: addToLog } = useLog();
+  const { entries: logEntries, addEntry: addToLog, clearLog } = useLog();
 
   // Tenta reconectar à sala ao abrir o app
   useEffect(() => {
@@ -71,6 +71,7 @@ export default function App() {
   function handleLeaveRoom() {
     room.leaveRoom();
     game.resetGame();
+    clearLog();
     setMode('select');
   }
 

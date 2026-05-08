@@ -4,8 +4,8 @@ interface Props {
   entries: LogEntry[];
 }
 
-function timeStr(date: Date): string {
-  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+function timeStr(ts: string): string {
+  return new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 export function LogTab({ entries }: Props) {
@@ -40,7 +40,7 @@ export function LogTab({ entries }: Props) {
               />
               <span>{entry.playerName}</span>
               <span>·</span>
-              <span>{timeStr(entry.timestamp)}</span>
+              <span>{timeStr(entry.timestamp as unknown as string)}</span>
             </div>
           </div>
         </div>

@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import type { Space } from '../types';
+import type { RoomEvent } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
 import { SpaceModal } from './SpaceModal';
 import gameData from '../data/smpj-drinking-game-data.json';
 
 const EXCLUDED_SPACES = new Set(['start', 'star_exchange']);
 const playableSpaces = (gameData.spaces as Space[]).filter(s => !EXCLUDED_SPACES.has(s.id));
-
-import type { RoomEvent } from '../types';
 
 interface Props {
   multiplier: number;
@@ -20,22 +19,28 @@ interface Props {
   onUseShield: () => void;
   showToast: (msg: string) => void;
   onBroadcast?: (event: RoomEvent) => void;
+  // Para casas pessoais: log local + toast de activity para outros
   onActivity?: (emoji: string, msg: string) => void;
+  // Para casas coletivas: só log local (sem activity broadcast — IncomingEventModal é a notificação)
+  onLogLocal?: (emoji: string, msg: string) => void;
+  onTriggerMinigame?: () => void;
 }
 
-export function SpacesSection({ multiplier, hasShield, characterName, characterColor, roomPlayerId, isRoomMode, onDrink, onUseShield, showToast, onBroadcast, onActivity }: Props) {
+export function SpacesSection({
+  multiplier, hasShield, characterName, characterColor,
+  roomPlayerId, isRoomMode, onDrink, onUseShield, showToast,
+  onBroadcast, onActivity, onLogLocal, onTriggerMinigame,
+}: Props) {
   const [activeSpace, setActiveSpace] = useState<Space | null>(null);
 
-  function handleDrink(count: number, spaceName?: string) {
+  function handleDrink(count: number) {
     onDrink(count);
     showToast(`🍺 +${count} gole${count !== 1 ? 's' : ''}!`);
-    if (spaceName) onActivity?.('🏠', `${characterName} caiu na ${spaceName} — ${count} gole${count !== 1 ? 's' : ''}`);
   }
 
-  function handleShield(spaceName?: string) {
+  function handleShield() {
     onUseShield();
     showToast('Escudo usado! Dose pulada 🛡️');
-    if (spaceName) onActivity?.('🛡️', `${characterName} usou o escudo na ${spaceName}`);
   }
 
   return (
@@ -55,14 +60,18 @@ export function SpacesSection({ multiplier, hasShield, characterName, characterC
       </div>
 
       {activeSpace && (
-        <SpaceModal space={activeSpace} multiplier={multiplier} hasShield={hasShield}
+        <SpaceModal
+          space={activeSpace} multiplier={multiplier} hasShield={hasShield}
           characterName={characterName} characterColor={characterColor}
           roomPlayerId={roomPlayerId} isRoomMode={isRoomMode}
-          onDrink={(count) => handleDrink(count, activeSpace.name_pt)}
-          onUseShield={() => handleShield(activeSpace.name_pt)}
+          onDrink={handleDrink}
+          onUseShield={handleShield}
           onClose={() => setActiveSpace(null)}
           onBroadcast={onBroadcast}
-          onLog={onActivity} />
+          onLogLocal={onLogLocal}
+          onActivity={onActivity}
+          onTriggerMinigame={onTriggerMinigame}
+        />
       )}
     </section>
   );
