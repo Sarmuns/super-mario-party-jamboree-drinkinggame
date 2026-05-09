@@ -35,7 +35,7 @@ export function RoomEntry({ nickname, onNicknameChange, error, isConnecting, onC
           type="text"
           value={nickname}
           onChange={e => onNicknameChange(e.target.value.slice(0, 20))}
-          placeholder="Ex: Pedrão, Destruidor..."
+          placeholder="Apelido..."
           className="w-full bg-gray-800 border-2 rounded-2xl px-4 py-3 text-base font-semibold text-white focus:outline-none transition-colors"
           style={{ borderColor: nickname.trim() ? 'var(--accent)' : '#374151' }}
         />
