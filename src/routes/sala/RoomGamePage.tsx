@@ -33,6 +33,13 @@ export function RoomGamePage() {
     if (room.status === 'lobby') navigate(`/sala/${code}/lobby`, { replace: true });
   }, [room.status]);
 
+  // BUG-04 fix: se personagem sumiu do localStorage, redireciona para selecionar
+  useEffect(() => {
+    if (!game.state.character && room.status === 'playing') {
+      navigate(`/sala/${code}/select`, { replace: true });
+    }
+  }, [game.state.character, room.status]);
+
   if (!game.state.character) return null;
 
   function handleLog(emoji: string, msg: string) {

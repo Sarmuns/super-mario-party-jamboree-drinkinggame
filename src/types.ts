@@ -58,7 +58,7 @@ export interface RoomPlayer {
 }
 
 export interface RoomEvent {
-  type: 'drinks_all' | 'drinks_others' | 'minigame_prebrew' | 'minigame_start' | 'activity';
+  type: 'drinks_all' | 'drinks_others' | 'minigame_prebrew' | 'minigame_start' | 'minigame_skip' | 'activity';
   fromPlayerId: string;
   fromPlayerName: string;
   characterColor: string;

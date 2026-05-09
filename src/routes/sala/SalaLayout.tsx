@@ -54,39 +54,61 @@ export function SalaLayout() {
     return () => { if (syncRef.current) clearTimeout(syncRef.current); };
   }, [game.state.totalDrinks, game.state.stars, game.state.hasShield, room.status]);
 
-  // Handle incoming events
-  const incomingEvent = room.incomingEvent;
   const multiplier = (game.state.isHomestretch ? 2 : 1) * (game.state.isJamboree ? 2 : 1);
 
-  if (incomingEvent?.type === 'activity') {
-    root.showToast(`${incomingEvent.emoji ?? '💬'} ${incomingEvent.message}`);
-    log.addEntry({
-      emoji: incomingEvent.emoji ?? '💬',
-      message: incomingEvent.message,
-      playerName: incomingEvent.fromPlayerName,
-      playerColor: incomingEvent.characterColor,
-      source: 'room',
-    });
-    room.dismissEvent();
-  }
+  // BUG-02 fix: handle events in useEffect, never during render
+  const incomingEvent = room.incomingEvent;
+  useEffect(() => {
+    if (!incomingEvent) return;
 
-  if (incomingEvent?.type === 'minigame_prebrew' && !room.isHost) {
-    setGuestMinigame({ phase: 'prebrew', hostName: incomingEvent.fromPlayerName, turn: incomingEvent.turn ?? game.state.turn });
-    room.dismissEvent();
-  }
+    if (incomingEvent.type === 'activity') {
+      root.showToast(`${incomingEvent.emoji ?? '💬'} ${incomingEvent.message}`);
+      log.addEntry({
+        emoji: incomingEvent.emoji ?? '💬',
+        message: incomingEvent.message,
+        playerName: incomingEvent.fromPlayerName,
+        playerColor: incomingEvent.characterColor,
+        source: 'room',
+      });
+      room.dismissEvent();
+      return;
+    }
 
-  if (incomingEvent?.type === 'minigame_start' && !room.isHost) {
-    setGuestMinigame(prev => prev
-      ? { ...prev, phase: 'result', format: incomingEvent.minigameFormat }
-      : { phase: 'result', hostName: incomingEvent.fromPlayerName, turn: incomingEvent.turn ?? game.state.turn, format: incomingEvent.minigameFormat }
-    );
-    room.dismissEvent();
-  }
+    if (!room.isHost) {
+      if (incomingEvent.type === 'minigame_prebrew') {
+        setGuestMinigame({ phase: 'prebrew', hostName: incomingEvent.fromPlayerName, turn: incomingEvent.turn ?? 1 });
+        room.dismissEvent();
+        return;
+      }
+      if (incomingEvent.type === 'minigame_start') {
+        setGuestMinigame(prev => prev
+          ? { ...prev, phase: 'result', format: incomingEvent.minigameFormat }
+          : { phase: 'result', hostName: incomingEvent.fromPlayerName, turn: incomingEvent.turn ?? 1, format: incomingEvent.minigameFormat }
+        );
+        room.dismissEvent();
+        return;
+      }
+      // BUG-01 fix: host pulou o minigame — descarta o modal de waiting
+      if (incomingEvent.type === 'minigame_skip') {
+        setGuestMinigame(null);
+        root.showToast('Host cancelou o minigame');
+        room.dismissEvent();
+        return;
+      }
+    } else {
+      // Host não processa seus próprios eventos de minigame
+      if (['minigame_prebrew', 'minigame_start', 'minigame_skip'].includes(incomingEvent.type)) {
+        room.dismissEvent();
+        return;
+      }
+    }
+  }, [incomingEvent]);
 
   const isDrinkEvent = incomingEvent &&
     incomingEvent.type !== 'activity' &&
     incomingEvent.type !== 'minigame_prebrew' &&
-    incomingEvent.type !== 'minigame_start';
+    incomingEvent.type !== 'minigame_start' &&
+    incomingEvent.type !== 'minigame_skip';
 
   return (
     <>

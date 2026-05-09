@@ -9,10 +9,14 @@ export function RoomSelectPage() {
   const { game, room } = useSalaContext();
   const navigate = useNavigate();
 
+  // BUG-05 fix: se o host iniciou o jogo enquanto o guest ainda escolhia personagem
   useEffect(() => {
-    if (game.state.character) navigate(`/sala/${code}/lobby`, { replace: true });
-  }, [game.state.character]);
+    if (room.status === 'playing') navigate(`/sala/${code}/game`, { replace: true });
+  }, [room.status]);
 
+  // BUG-03 fix: não usar useEffect para navegar — isso criava race condition
+  // porque game.selectCharacter() é síncrono e o efeito disparava antes de
+  // room.selectRoomCharacter() terminar. Navegamos somente após ambas concluírem.
   async function handleStart(character: Character) {
     game.selectCharacter(character);
     await room.selectRoomCharacter(character);

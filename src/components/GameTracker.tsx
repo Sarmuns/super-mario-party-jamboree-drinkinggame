@@ -165,6 +165,17 @@ export function GameTracker({
     setShowMinigame(false);
     showToast(isVsMinigame ? 'Minigame VS pulado' : `Turno ${turn} encerrado`);
     onLog('🎮', isVsMinigame ? 'Casa VS — minigame pulado' : `Turno ${turn} encerrado (minigame pulado)`);
+    // Avisa guests que o minigame foi cancelado (resolve BUG-01)
+    if (onBroadcast) {
+      onBroadcast({
+        type: 'minigame_skip',
+        fromPlayerId: roomPlayerId ?? '',
+        fromPlayerName: character.name,
+        characterColor: character.color,
+        message: 'Minigame cancelado pelo host',
+        drinks: 0,
+      });
+    }
   }
 
   function handleAddOne() {
