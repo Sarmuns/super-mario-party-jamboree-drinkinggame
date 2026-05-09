@@ -52,6 +52,7 @@ export function GameTracker({
   const [activeTab, setActiveTab] = useState<'game' | 'log'>('game');
   const [showEndGame, setShowEndGame] = useState(false);
   const [showMinigame, setShowMinigame] = useState(false);
+  const [isVsMinigame, setIsVsMinigame] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
 
   const multiplier = (isHomestretch ? 2 : 1) * (isJamboree ? 2 : 1);
@@ -100,8 +101,26 @@ export function GameTracker({
     logAndBroadcast('🛡️', 'Usou o escudo manualmente');
   }
 
+  // Casa VS → minigame sem avançar turno
+  function handleVsMinigame() {
+    setIsVsMinigame(true);
+    setShowMinigame(true);
+    if (onBroadcast) {
+      onBroadcast({
+        type: 'minigame_prebrew',
+        fromPlayerId: roomPlayerId ?? '',
+        fromPlayerName: character.name,
+        characterColor: character.color,
+        message: `${character.name} caiu na Casa VS — minigame!`,
+        drinks: 1,
+        turn,
+      });
+    }
+  }
+
   // Host clicou em "Fim do Turno" → broadcast prebrew imediato
   function handleMinigameOpen() {
+    setIsVsMinigame(false);
     setShowMinigame(true);
     if (onBroadcast) {
       onBroadcast({
@@ -134,17 +153,18 @@ export function GameTracker({
 
   function handleMinigameConfirm(drinks: number, format: string) {
     onDrink(drinks);
-    onIncrementTurn();
+    if (!isVsMinigame) onIncrementTurn(); // VS Space não avança turno
     setShowMinigame(false);
-    showToast(`🎮 Turno ${turn} encerrado! 🍺 +${drinks}`);
-    logAndBroadcast('🎮', `Encerrou Turno ${turn} — ${format.toUpperCase()} — bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`);
+    const label = isVsMinigame ? 'Casa VS' : `Turno ${turn}`;
+    showToast(`🎮 ${label} — minigame! 🍺 +${drinks}`);
+    logAndBroadcast('🎮', `${label} — ${format.toUpperCase()} — bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`);
   }
 
   function handleMinigameSkip() {
-    onIncrementTurn();
+    if (!isVsMinigame) onIncrementTurn();
     setShowMinigame(false);
-    showToast(`Turno ${turn} encerrado`);
-    onLog('🎮', `Turno ${turn} encerrado (minigame pulado)`);
+    showToast(isVsMinigame ? 'Minigame VS pulado' : `Turno ${turn} encerrado`);
+    onLog('🎮', isVsMinigame ? 'Casa VS — minigame pulado' : `Turno ${turn} encerrado (minigame pulado)`);
   }
 
   function handleAddOne() {
@@ -203,7 +223,7 @@ export function GameTracker({
               roomPlayerId={roomPlayerId}
               onActivity={logAndBroadcast}
               onLogLocal={onLog}
-              onTriggerMinigame={isRoomMode ? handleMinigameOpen : () => setShowMinigame(true)}
+              onTriggerMinigame={handleVsMinigame}
             />
 
             <DiceSection hasShield={hasShield} multiplier={multiplier}
