@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { generateRoomCode } from '../lib/roomUtils';
 
 interface Props {
+  nickname: string;
+  onNicknameChange: (n: string) => void;
   error: string | null;
   isConnecting: boolean;
   onCreateRoom: (code: string) => void;
@@ -9,10 +11,12 @@ interface Props {
   onBack: () => void;
 }
 
-export function RoomEntry({ error, isConnecting, onCreateRoom, onJoinRoom, onBack }: Props) {
+export function RoomEntry({ nickname, onNicknameChange, error, isConnecting, onCreateRoom, onJoinRoom, onBack }: Props) {
   const [tab, setTab] = useState<'create' | 'join'>('create');
   const [code, setCode] = useState('');
   const [generatedCode] = useState(() => generateRoomCode());
+
+  // Nickname é opcional — se vazio usa o nome do personagem escolhido depois
 
   return (
     <div className="min-h-dvh bg-gray-900 flex flex-col px-4">
@@ -20,8 +24,22 @@ export function RoomEntry({ error, isConnecting, onCreateRoom, onJoinRoom, onBac
         <button onClick={onBack} className="text-gray-400 text-2xl px-2 active:scale-95 transition-transform">←</button>
         <div>
           <div className="text-xl font-bold text-white">Modo Sala</div>
-          <div className="text-xs text-gray-400">Escolha o personagem depois de entrar</div>
+          <div className="text-xs text-gray-400">Jogue sincronizado com seus amigos</div>
         </div>
+      </div>
+
+      {/* Apelido */}
+      <div className="mb-6">
+        <div className="text-xs text-gray-400 mb-2 uppercase tracking-wider font-semibold">Seu apelido na sala</div>
+        <input
+          type="text"
+          value={nickname}
+          onChange={e => onNicknameChange(e.target.value.slice(0, 20))}
+          placeholder="Ex: Pedrão, Destruidor..."
+          className="w-full bg-gray-800 border-2 rounded-2xl px-4 py-3 text-base font-semibold text-white focus:outline-none transition-colors"
+          style={{ borderColor: nickname.trim() ? 'var(--accent)' : '#374151' }}
+        />
+        <div className="text-xs text-gray-500 mt-1">Opcional — se vazio usa o nome do personagem escolhido</div>
       </div>
 
       {/* Tab selector */}

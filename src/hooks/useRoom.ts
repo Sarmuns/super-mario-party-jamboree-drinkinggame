@@ -234,11 +234,11 @@ export function useRoom() {
     });
   }, []);
 
-  const selectRoomCharacter = useCallback(async (character: Character) => {
+  const selectRoomCharacter = useCallback(async (character: Character, displayName?: string) => {
     if (!channelRef.current || !myStateRef.current) return;
     const updated: RoomPlayer = {
       ...myStateRef.current,
-      name: character.name,
+      name: displayName || character.name,
       characterId: character.id,
       characterColor: character.color,
       characterIcon: character.icon_url,

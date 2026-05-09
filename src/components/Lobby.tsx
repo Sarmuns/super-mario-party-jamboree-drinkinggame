@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
 import { resolvePortrait } from '../lib/characterLookup';
@@ -13,6 +14,8 @@ interface Props {
 
 export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }: Props) {
   const canStart = players.filter(p => p.characterId).length >= 2;
+  const [showQR, setShowQR] = useState(false);
+  const joinUrl = `${window.location.origin}/sala/${roomCode}/select`;
 
   return (
     <div className="min-h-dvh bg-gray-900 flex flex-col px-4">
@@ -21,10 +24,44 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
           <div className="text-xs text-gray-400 mb-1">Código da sala</div>
           <div className="text-4xl font-black text-white tracking-widest">{roomCode}</div>
         </div>
-        <button onClick={onLeave} className="text-sm text-gray-500 px-3 py-2 rounded-xl border border-gray-700">
-          Sair
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowQR(true)}
+            className="text-sm text-gray-400 px-3 py-2 rounded-xl border border-gray-700 active:scale-95 transition-transform"
+            title="QR Code de entrada">
+            📱
+          </button>
+          <button onClick={onLeave} className="text-sm text-gray-500 px-3 py-2 rounded-xl border border-gray-700">
+            Sair
+          </button>
+        </div>
       </div>
+
+      {/* QR Code modal */}
+      {showQR && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/80" onClick={() => setShowQR(false)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+            <div className="bg-gray-800 rounded-3xl p-6 flex flex-col items-center gap-4 shadow-2xl border border-gray-700 max-w-xs w-full">
+              <div className="text-base font-bold text-white">Entrar na sala</div>
+              <div className="bg-white p-3 rounded-2xl">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(joinUrl)}&size=180x180&margin=0`}
+                  alt="QR Code"
+                  width={180} height={180}
+                />
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-black text-white tracking-widest">{roomCode}</div>
+                <div className="text-xs text-gray-400 mt-1 break-all">{joinUrl}</div>
+              </div>
+              <button onClick={() => setShowQR(false)}
+                className="w-full py-3 rounded-2xl text-sm font-semibold text-gray-400 bg-gray-700 active:scale-95 transition-transform">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="text-xs text-gray-500 mb-6">
         {isHost ? 'Você é o host — aguarde os jogadores e inicie a partida.' : 'Aguardando o host iniciar...'}

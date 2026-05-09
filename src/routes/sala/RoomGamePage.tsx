@@ -75,6 +75,7 @@ export function RoomGamePage() {
       roomPlayerId={room.playerId}
       isHost={room.isHost}
       onDrink={game.addDrinks}
+      onSetDrinks={game.setTotalDrinks}
       onActivateShield={game.activateShield}
       onUseShield={game.useShield}
       onUndo={game.undo}

@@ -29,6 +29,7 @@ interface Props {
   isHost?: boolean;
   onBroadcast?: (event: RoomEvent) => void;
   onDrink: (count: number) => void;
+  onSetDrinks: (value: number) => void;
   onActivateShield: () => void;
   onUseShield: () => void;
   onUndo: () => void;
@@ -45,7 +46,7 @@ export function GameTracker({
   character, totalDrinks, hasShield, isHomestretch, isJamboree,
   stars, turn, canUndo, logEntries, onClearLog,
   roomPlayers, roomCode, roomPlayerId, isHost, onBroadcast,
-  onDrink, onActivateShield, onUseShield, onUndo,
+  onDrink, onSetDrinks, onActivateShield, onUseShield, onUndo,
   onToggleHomestretch, onToggleJamboree, onAddStars, onIncrementTurn,
   onReset, onLog, showToast,
 }: Props) {
@@ -193,6 +194,7 @@ export function GameTracker({
         onUseShield={handleUseShieldFromHeader} onToggleHomestretch={onToggleHomestretch}
         onToggleJamboree={onToggleJamboree} onReset={onReset} onUndo={onUndo}
         onAddOne={handleAddOne}
+        onSetDrinks={(v) => { onSetDrinks(v); showToast(`✏️ Goles ajustados para ${v}`); }}
         onShowPlayers={isRoomMode ? () => setShowPlayers(true) : undefined}
       />
 

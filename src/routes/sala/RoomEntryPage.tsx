@@ -3,7 +3,7 @@ import { RoomEntry } from '../../components/RoomEntry';
 import { useSalaContext } from './SalaLayout';
 
 export function RoomEntryPage() {
-  const { room, game } = useSalaContext();
+  const { room, game, nickname, setNickname } = useSalaContext();
   const navigate = useNavigate();
 
   async function handleCreate(code: string) {
@@ -24,6 +24,8 @@ export function RoomEntryPage() {
 
   return (
     <RoomEntry
+      nickname={nickname}
+      onNicknameChange={setNickname}
       error={room.error}
       isConnecting={room.status === 'connecting'}
       onCreateRoom={handleCreate}

@@ -38,6 +38,10 @@ export function useGameState() {
     setState(s => { snapshot(s); return { ...s, totalDrinks: s.totalDrinks + count }; });
   }, []);
 
+  const setTotalDrinks = useCallback((value: number) => {
+    setState(s => { snapshot(s); return { ...s, totalDrinks: Math.max(0, value) }; });
+  }, []);
+
   const activateShield = useCallback(() => {
     setState(s => { snapshot(s); return { ...s, hasShield: true }; });
   }, []);
@@ -84,6 +88,7 @@ export function useGameState() {
     canUndo,
     selectCharacter,
     addDrinks,
+    setTotalDrinks,
     activateShield,
     useShield,
     undo,

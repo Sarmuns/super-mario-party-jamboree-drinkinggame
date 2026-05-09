@@ -35,6 +35,7 @@ export function OfflineGamePage() {
       logEntries={log.entries}
       onClearLog={log.clearLog}
       onDrink={game.addDrinks}
+      onSetDrinks={game.setTotalDrinks}
       onActivateShield={game.activateShield}
       onUseShield={game.useShield}
       onUndo={game.undo}

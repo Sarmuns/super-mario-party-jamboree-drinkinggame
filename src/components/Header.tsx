@@ -18,23 +18,32 @@ interface Props {
   onReset: () => void;
   onUndo: () => void;
   onAddOne: () => void;
+  onSetDrinks: (value: number) => void;
   onShowPlayers?: () => void;
 }
 
 export function Header({
   character, totalDrinks, hasShield, isHomestretch, isJamboree,
   stars, turn, canUndo, roomPlayerCount,
-  onUseShield, onToggleHomestretch, onToggleJamboree, onReset, onUndo, onAddOne, onShowPlayers,
+  onUseShield, onToggleHomestretch, onToggleJamboree, onReset, onUndo, onAddOne, onSetDrinks, onShowPlayers,
 }: Props) {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [animKey, setAnimKey] = useState(0);
   const prevDrinks = useRef(totalDrinks);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (totalDrinks > prevDrinks.current) setAnimKey(k => k + 1);
     prevDrinks.current = totalDrinks;
   }, [totalDrinks]);
 
+  useEffect(() => {
+    if (isEditing) inputRef.current?.select();
+  }, [isEditing]);
+
+  // Long-press no avatar → reset
   function startLongPress() {
     longPressTimer.current = setTimeout(() => {
       if (window.confirm('Resetar o jogo? Isso apaga tudo.')) onReset();
@@ -42,6 +51,17 @@ export function Header({
   }
   function cancelLongPress() {
     if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  }
+
+  function openEdit() {
+    setEditValue(String(totalDrinks));
+    setIsEditing(true);
+  }
+
+  function confirmEdit() {
+    const v = parseInt(editValue, 10);
+    if (!isNaN(v)) onSetDrinks(v);
+    setIsEditing(false);
   }
 
   const multiplier = (isHomestretch ? 2 : 1) * (isJamboree ? 2 : 1);
@@ -55,7 +75,7 @@ export function Header({
         boxShadow: `0 1px 20px rgba(var(--accent-rgb) / 0.1)`,
       }}
     >
-      {/* Row 1: avatar, name/stars/turn, actions */}
+      {/* Row 1 */}
       <div className="flex items-center gap-3">
         <button
           onMouseDown={startLongPress} onMouseUp={cancelLongPress}
@@ -81,7 +101,6 @@ export function Header({
           </div>
         </div>
 
-        {/* Room players button */}
         {onShowPlayers && (
           <button onClick={onShowPlayers}
             className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-gray-600 text-gray-300 bg-gray-800 active:scale-95 transition-transform">
@@ -97,8 +116,7 @@ export function Header({
         )}
 
         <button onClick={onUndo} disabled={!canUndo}
-          className="shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 disabled:opacity-25 text-gray-400"
-          title="Desfazer">
+          className="shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 disabled:opacity-25 text-gray-400">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>
           </svg>
@@ -106,8 +124,7 @@ export function Header({
         </button>
 
         <button onClick={() => { if (window.confirm('Resetar o jogo? Isso apaga tudo.')) onReset(); }}
-          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:text-gray-300 active:scale-95 transition-all"
-          title="Resetar jogo">
+          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:text-gray-300 active:scale-95 transition-all">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
           </svg>
@@ -116,27 +133,53 @@ export function Header({
 
       {/* Row 2: drink counter + toggles */}
       <div className="flex items-center gap-3">
-        {/* Drink counter + +1 */}
         <div className="flex items-center gap-2">
-          <span key={animKey} className="text-3xl font-black leading-none drink-bump" style={{ color: 'var(--accent)' }}>
-            {totalDrinks}
-          </span>
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="number"
+              inputMode="numeric"
+              value={editValue}
+              onChange={e => setEditValue(e.target.value)}
+              onBlur={confirmEdit}
+              onKeyDown={e => {
+                if (e.key === 'Enter') confirmEdit();
+                if (e.key === 'Escape') setIsEditing(false);
+              }}
+              className="w-16 text-3xl font-black bg-transparent border-b-2 text-center outline-none leading-none"
+              style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
+            />
+          ) : (
+            <span key={animKey} className="text-3xl font-black leading-none drink-bump" style={{ color: 'var(--accent)' }}>
+              {totalDrinks}
+            </span>
+          )}
           <span className="text-xs text-gray-400">goles</span>
-          <button onClick={onAddOne}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold border border-gray-600 text-gray-300 active:scale-95 transition-transform bg-gray-800"
-            title="+1 gole">+1</button>
+          {!isEditing && (
+            <>
+              <button onClick={onAddOne}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold border border-gray-600 text-gray-300 active:scale-95 transition-transform bg-gray-800"
+                title="+1 gole">+1</button>
+              <button onClick={openEdit}
+                className="w-6 h-6 flex items-center justify-center rounded-full text-gray-600 hover:text-gray-400 active:scale-95 transition-all"
+                title="Editar goles">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            </>
+          )}
         </div>
 
         <div className="flex-1" />
 
-        {/* Multiplier badge */}
         {multiplier > 1 && (
           <span className="text-xs font-bold text-red-400 bg-red-900/40 px-1.5 py-0.5 rounded-full">
             {multiplier}x
           </span>
         )}
 
-        {/* Jamboree toggle */}
         <button onClick={onToggleJamboree} className="shrink-0 flex flex-col items-center gap-0.5" title="Jamboree Buddy">
           <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isJamboree ? 'bg-yellow-500' : 'bg-gray-600'}`}>
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isJamboree ? 'left-4' : 'left-0.5'}`} />
@@ -144,7 +187,6 @@ export function Header({
           <span className="text-[9px] text-gray-400 leading-none">Jamboree</span>
         </button>
 
-        {/* Homestretch toggle */}
         <button onClick={onToggleHomestretch} className="shrink-0 flex flex-col items-center gap-0.5" title="Últimos 5 turnos">
           <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isHomestretch ? 'bg-red-600' : 'bg-gray-600'}`}>
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isHomestretch ? 'left-4' : 'left-0.5'}`} />

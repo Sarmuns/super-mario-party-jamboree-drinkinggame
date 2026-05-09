@@ -20,6 +20,8 @@ export interface SalaContext extends RootContext {
   log: ReturnType<typeof useLog>;
   guestMinigame: GuestMinigameState | null;
   setGuestMinigame: (s: GuestMinigameState | null) => void;
+  nickname: string;
+  setNickname: (n: string) => void;
 }
 
 export function SalaLayout() {
@@ -28,6 +30,12 @@ export function SalaLayout() {
   const room = useRoom();
   const log = useLog();
   const [guestMinigame, setGuestMinigame] = useState<GuestMinigameState | null>(null);
+  const [nickname, setNicknameState] = useState(() => localStorage.getItem('smpj-nickname') ?? '');
+
+  function setNickname(n: string) {
+    setNicknameState(n);
+    localStorage.setItem('smpj-nickname', n);
+  }
 
   // Accent color
   useEffect(() => {
@@ -152,7 +160,7 @@ export function SalaLayout() {
         </div>
       )}
 
-      <Outlet context={{ ...root, game, room, log, guestMinigame, setGuestMinigame } satisfies SalaContext} />
+      <Outlet context={{ ...root, game, room, log, guestMinigame, setGuestMinigame, nickname, setNickname } satisfies SalaContext} />
     </>
   );
 }

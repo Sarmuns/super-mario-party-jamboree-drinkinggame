@@ -6,7 +6,7 @@ import type { Character } from '../../types';
 
 export function RoomSelectPage() {
   const { code } = useParams<{ code: string }>();
-  const { game, room } = useSalaContext();
+  const { game, room, nickname } = useSalaContext();
   const navigate = useNavigate();
 
   // BUG-05 fix: se o host iniciou o jogo enquanto o guest ainda escolhia personagem
@@ -19,7 +19,7 @@ export function RoomSelectPage() {
   // room.selectRoomCharacter() terminar. Navegamos somente após ambas concluírem.
   async function handleStart(character: Character) {
     game.selectCharacter(character);
-    await room.selectRoomCharacter(character);
+    await room.selectRoomCharacter(character, nickname.trim() || undefined);
     navigate(`/sala/${code}/lobby`);
   }
 
