@@ -43,6 +43,7 @@ export function useRoom() {
   const [error, setError] = useState<string | null>(null);
   const [incomingEvent, setIncomingEvent] = useState<RoomEvent | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [presenceNotification, setPresenceNotification] = useState<string | null>(null);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const myStateRef = useRef<RoomPlayer | null>(null);
@@ -84,6 +85,18 @@ export function useRoom() {
     return supabase
       .channel(`room:${code}`, { config: { presence: { key: playerId } } })
       .on('presence', { event: 'sync' }, () => syncPresence(channelRef.current!))
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        const others = (newPresences as unknown as RoomPlayer[]).filter(p => p.playerId !== playerId && p.name);
+        if (others.length > 0) {
+          setPresenceNotification(`${others[0].name || 'Alguém'} entrou na sala 👋`);
+        }
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        const others = (leftPresences as unknown as RoomPlayer[]).filter(p => p.playerId !== playerId && p.name);
+        if (others.length > 0) {
+          setPresenceNotification(`${others[0].name || 'Alguém'} saiu da sala 👋`);
+        }
+      })
       .on('broadcast', { event: 'game_event' }, ({ payload }) => {
         setIncomingEvent(payload as RoomEvent);
       })
@@ -284,9 +297,11 @@ export function useRoom() {
     setStatus('idle');
     setError(null);
     setIncomingEvent(null);
+    setPresenceNotification(null);
   }, []);
 
   const dismissEvent = useCallback(() => setIncomingEvent(null), []);
+  const dismissPresenceNotification = useCallback(() => setPresenceNotification(null), []);
 
   // Reconecta ao voltar do background (visibilitychange)
   useEffect(() => {
@@ -311,10 +326,10 @@ export function useRoom() {
   useEffect(() => () => { channelRef.current?.unsubscribe(); }, []);
 
   return {
-    roomCode, players, status, error, incomingEvent, isReconnecting,
+    roomCode, players, status, error, incomingEvent, isReconnecting, presenceNotification,
     isHost, playerId, myPlayer,
     reconnect, createRoom, joinRoom, selectRoomCharacter, updateMyState, broadcast,
-    startGame, leaveRoom, dismissEvent,
+    startGame, leaveRoom, dismissEvent, dismissPresenceNotification,
     loadSession,
   };
 }

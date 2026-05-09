@@ -64,6 +64,13 @@ export function SalaLayout() {
 
   const multiplier = (game.state.isHomestretch ? 2 : 1) * (game.state.isJamboree ? 2 : 1);
 
+  // Notificações de entrada/saída via Presence
+  useEffect(() => {
+    if (!room.presenceNotification) return;
+    root.showToast(room.presenceNotification);
+    room.dismissPresenceNotification();
+  }, [room.presenceNotification]);
+
   // BUG-02 fix: handle events in useEffect, never during render
   const incomingEvent = room.incomingEvent;
   useEffect(() => {
