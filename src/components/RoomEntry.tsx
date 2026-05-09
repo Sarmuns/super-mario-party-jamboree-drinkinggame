@@ -66,34 +66,30 @@ export function RoomEntry({ nickname, onNicknameChange, error, isConnecting, onC
         <div className="flex flex-col gap-4">
           <div>
             <div className="text-xs text-gray-400 mb-2 uppercase tracking-wider">Código da sala</div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={code}
-                onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4))}
-                placeholder="ABCD"
-                className="flex-1 bg-gray-800 border-2 border-gray-700 rounded-2xl px-4 py-4 text-4xl font-black text-white text-center tracking-widest focus:outline-none focus:border-gray-500"
-                style={{ letterSpacing: '0.35em' }}
-              />
-              <button
-                onClick={() => setShowScanner(true)}
-                className="w-16 rounded-2xl bg-gray-800 border-2 border-gray-700 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white hover:border-gray-500 active:scale-95 transition-all"
-                title="Escanear QR Code"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/>
-                  <rect x="3" y="16" width="5" height="5" rx="1"/>
-                  <path d="M21 16h-3a2 2 0 0 0-2 2v3M21 21v.01M16 16v.01M12 7v3a2 2 0 0 1-2 2H7M3 12h.01M12 3h.01M7 12h3"/>
-                </svg>
-                <span className="text-[9px] font-semibold leading-none">QR</span>
-              </button>
-            </div>
+            <input
+              type="text"
+              value={code}
+              onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4))}
+              placeholder="ABCD"
+              className="w-full bg-gray-800 border-2 border-gray-700 rounded-2xl px-4 py-4 text-4xl font-black text-white text-center tracking-widest focus:outline-none focus:border-gray-500"
+              style={{ letterSpacing: '0.35em' }}
+            />
           </div>
 
           <button onClick={() => onJoinRoom(code)} disabled={code.length < 4 || isConnecting}
             className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform disabled:opacity-50"
             style={{ backgroundColor: 'var(--accent, #6366f1)' }}>
             {isConnecting ? 'Entrando...' : 'Entrar na Sala'}
+          </button>
+
+          <button onClick={() => setShowScanner(true)}
+            className="w-full py-3 rounded-2xl text-sm font-bold text-gray-400 border border-gray-700 bg-gray-800/60 active:scale-95 transition-transform flex items-center justify-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/>
+              <rect x="3" y="16" width="5" height="5" rx="1"/>
+              <path d="M21 16h-3a2 2 0 0 0-2 2v3M21 21v.01M16 16v.01M12 7v3a2 2 0 0 1-2 2H7M3 12h.01M12 3h.01M7 12h3"/>
+            </svg>
+            Escanear QR Code da sala
           </button>
         </div>
       )}
