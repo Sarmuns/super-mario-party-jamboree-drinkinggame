@@ -4,6 +4,7 @@ import { useGameState } from '../../hooks/useGameState';
 import { useRoom } from '../../hooks/useRoom';
 import { useLog } from '../../hooks/useLog';
 import { IncomingEventModal } from '../../components/IncomingEventModal';
+import { calcMultiplier } from '../../lib/multiplier';
 import type { RootContext } from '../Root';
 
 // Estados separados para empilhamento simultâneo
@@ -84,7 +85,7 @@ export function SalaLayout() {
 
   // Incoming events — em useEffect para não causar side effects durante render
   const incomingEvent = room.incomingEvent;
-  const multiplier = (game.state.isHomestretch ? 2 : 1) * (game.state.isJamboree ? 2 : 1);
+  const multiplier = calcMultiplier(game.state.isHomestretch, game.state.isJamboree);
 
   useEffect(() => {
     if (!incomingEvent) return;

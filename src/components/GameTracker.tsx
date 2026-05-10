@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Character, RoomPlayer, RoomEvent } from '../types';
+import { calcMultiplier } from '../lib/multiplier';
 import type { LogEntry } from '../hooks/useLog';
 import { Header } from './Header';
 import { SpacesSection } from './SpacesSection';
@@ -56,7 +57,7 @@ export function GameTracker({
   const [isVsMinigame, setIsVsMinigame] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
 
-  const multiplier = (isHomestretch ? 2 : 1) * (isJamboree ? 2 : 1);
+  const multiplier = calcMultiplier(isHomestretch, isJamboree);
   const isRoomMode = !!roomPlayers;
 
   const sendActivity = useCallback((emoji: string, msg: string) => {

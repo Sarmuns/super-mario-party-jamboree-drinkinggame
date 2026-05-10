@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import type { Character } from '../types';
+import { calcMultiplier } from '../lib/multiplier';
 import { ImageWithFallback } from './ImageWithFallback';
 
 interface Props {
@@ -59,7 +60,7 @@ export function Header({
     setIsEditing(false);
   }
 
-  const multiplier = (isHomestretch ? 2 : 1) * (isJamboree ? 2 : 1);
+  const multiplier = calcMultiplier(isHomestretch, isJamboree);
 
   return (
     <header
