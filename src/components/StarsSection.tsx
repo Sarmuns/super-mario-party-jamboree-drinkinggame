@@ -21,9 +21,11 @@ interface Props {
   onStarChange: (delta: number) => void;
   showToast: (msg: string) => void;
   onActivity?: (emoji: string, msg: string) => void;
+  onShowBoo?: () => void;
+  onShowDuel?: () => void;
 }
 
-export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onActivity }: Props) {
+export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onActivity, onShowBoo, onShowDuel }: Props) {
   const [pending, setPending] = useState<StarEvent | null>(null);
 
   function confirm() {
@@ -60,6 +62,32 @@ export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onA
           );
         })}
       </div>
+
+      {/* Boo e Duelo */}
+      {(onShowBoo || onShowDuel) && (
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          {onShowBoo && (
+            <button onClick={onShowBoo}
+              className="flex items-center gap-2 px-3 py-3 rounded-2xl bg-gray-800 border border-gray-700 active:scale-[0.98] transition-transform">
+              <span className="text-xl shrink-0">👻</span>
+              <div className="text-left min-w-0">
+                <div className="text-xs font-bold text-white leading-tight">Boo</div>
+                <div className="text-[10px] text-gray-400 leading-tight">roubou estrela/grana</div>
+              </div>
+            </button>
+          )}
+          {onShowDuel && (
+            <button onClick={onShowDuel}
+              className="flex items-center gap-2 px-3 py-3 rounded-2xl bg-gray-800 border border-gray-700 active:scale-[0.98] transition-transform">
+              <span className="text-xl shrink-0">⚔️</span>
+              <div className="text-left min-w-0">
+                <div className="text-xs font-bold text-white leading-tight">Duelo</div>
+                <div className="text-[10px] text-gray-400 leading-tight">1v1 com outro jogador</div>
+              </div>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Modal de confirmação */}
       {pending && (

@@ -183,28 +183,39 @@ export function GameTracker({
     }
   }
 
-  function handleBooConfirm(victimId: string, victimName: string, drinks: number) {
-    onAddStars(1);
-    if (onBroadcast) {
+  function handleBooConfirm(booType: 'star' | 'coin', victimId: string, victimName: string) {
+    const drinks = booType === 'star' ? 3 * multiplier : 1 * multiplier;
+    if (booType === 'star') onAddStars(1);
+    const victimPart = victimName ? ` de ${victimName}` : '';
+    if (victimId && onBroadcast) {
       onBroadcast({
         type: 'boo_steal',
         fromPlayerId: roomPlayerId ?? '',
         fromPlayerName: character.name,
         characterColor: character.color,
-        message: `${character.name} usou o Boo em ${victimName}!`,
+        message: booType === 'star'
+          ? `${character.name} usou o Boo em ${victimName} — roubou estrela!`
+          : `${character.name} usou o Boo em ${victimName} — roubou dinheiro!`,
         drinks,
         targetPlayerId: victimId,
+        booType,
       });
     }
-    showToast(`👻 +1⭐ roubada de ${victimName}!`);
-    logAndBroadcast('👻', `Usou o Boo em ${victimName} — +1⭐`);
+    if (booType === 'star') {
+      showToast(`👻 +1⭐ roubada${victimPart}!`);
+      logAndBroadcast('👻', `Usou o Boo${victimPart} — +1⭐`);
+    } else {
+      showToast(`👻 Roubou dinheiro${victimPart}!`);
+      logAndBroadcast('👻', `Usou o Boo${victimPart} — roubou dinheiro`);
+    }
     setShowBoo(false);
   }
 
   function handleDuelChallenge(opponentId: string, opponentName: string) {
     const preDrink = 1 * multiplier;
     onDrink(preDrink);
-    if (onBroadcast) {
+    const isCpu = opponentId === '__cpu__' || !opponentId;
+    if (!isCpu && onBroadcast) {
       onBroadcast({
         type: 'duel_challenge',
         fromPlayerId: roomPlayerId ?? '',
@@ -215,18 +226,21 @@ export function GameTracker({
         targetPlayerId: opponentId,
       });
     }
-    logAndBroadcast('⚔️', `Desafiou ${opponentName} — bebeu ${preDrink} (pré-duelo)`);
-    showToast(`⚔️ Duelo com ${opponentName}! Pré-duelo: +${preDrink}🍺`);
+    const label = opponentName && opponentName !== 'oponente' ? `vs ${opponentName}` : '';
+    logAndBroadcast('⚔️', `Duelo${label ? ' ' + label : ''} — bebeu ${preDrink} (pré-duelo)`);
+    showToast(`⚔️ Duelo${label ? ' ' + label : ''}! Pré-duelo: +${preDrink}🍺`);
   }
 
   function handleDuelResult(lost: boolean, opponentId: string, opponentName: string) {
     const loserDrinks = 2 * multiplier;
+    const isCpu = opponentId === '__cpu__' || !opponentId;
+    const label = opponentName && opponentName !== 'oponente' ? ` vs ${opponentName}` : '';
     if (lost) {
       onDrink(loserDrinks);
-      showToast(`😅 Perdeu o duelo! 🍺 +${loserDrinks}`);
-      logAndBroadcast('😅', `Perdeu o duelo vs ${opponentName} — bebeu ${loserDrinks} goles`);
+      showToast(`😅 Perdeu o duelo${label}! 🍺 +${loserDrinks}`);
+      logAndBroadcast('😅', `Perdeu o duelo${label} — bebeu ${loserDrinks} goles`);
     } else {
-      if (onBroadcast) {
+      if (!isCpu && onBroadcast) {
         onBroadcast({
           type: 'duel_result',
           fromPlayerId: roomPlayerId ?? '',
@@ -237,8 +251,8 @@ export function GameTracker({
           targetPlayerId: opponentId,
         });
       }
-      showToast(`🏆 Ganhou o duelo vs ${opponentName}!`);
-      logAndBroadcast('🏆', `Ganhou o duelo vs ${opponentName}`);
+      showToast(`🏆 Ganhou o duelo${label}!`);
+      logAndBroadcast('🏆', `Ganhou o duelo${label}`);
     }
     setShowDuel(false);
   }
@@ -313,7 +327,9 @@ export function GameTracker({
 
             <StarsSection multiplier={multiplier} onDrink={onDrink}
               onStarChange={onAddStars} showToast={showToast}
-              onActivity={logAndBroadcast} characterName={character.name} />
+              onActivity={logAndBroadcast} characterName={character.name}
+              onShowBoo={() => setShowBoo(true)}
+              onShowDuel={() => setShowDuel(true)} />
 
             <RulesSection />
 
@@ -330,18 +346,7 @@ export function GameTracker({
                   Aguardando o host encerrar o turno...
                 </div>
               )}
-              {isRoomMode && roomPlayers && roomPlayerId && (
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => setShowBoo(true)}
-                    className="py-3 rounded-2xl text-sm font-bold text-gray-300 border border-gray-600 bg-gray-800/60 active:scale-95 transition-transform">
-                    👻 Usei o Boo
-                  </button>
-                  <button onClick={() => setShowDuel(true)}
-                    className="py-3 rounded-2xl text-sm font-bold text-gray-300 border border-gray-600 bg-gray-800/60 active:scale-95 transition-transform">
-                    ⚔️ Duelo
-                  </button>
-                </div>
-              )}
+
               <button onClick={() => setShowEndGame(true)}
                 className="w-full py-3 rounded-2xl text-sm font-bold text-gray-400 border border-gray-700 bg-gray-800/60 active:scale-95 transition-transform">
                 🏁 Fim de Partida
@@ -370,7 +375,7 @@ export function GameTracker({
           onClose={() => setShowPlayers(false)} />
       )}
 
-      {showBoo && roomPlayers && roomPlayerId && (
+      {showBoo && (
         <BooModal
           roomPlayers={roomPlayers}
           myPlayerId={roomPlayerId}
@@ -380,7 +385,7 @@ export function GameTracker({
         />
       )}
 
-      {showDuel && roomPlayers && roomPlayerId && (
+      {showDuel && (
         <DuelModal
           roomPlayers={roomPlayers}
           myPlayerId={roomPlayerId}

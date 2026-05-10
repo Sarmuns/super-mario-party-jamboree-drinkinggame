@@ -10,6 +10,8 @@ import type { RootContext } from '../Root';
 // Estados separados para empilhamento simultâneo
 interface PrebrewState { hostName: string; turn: number; }
 interface ResultState  { hostName: string; turn: number; format?: string; }
+interface DuelPrebrewState { challengerName: string; drinks: number; }
+interface DuelResultState  { challengerName: string; drinks: number; }
 
 export interface SalaContext extends RootContext {
   game: ReturnType<typeof useGameState>;
@@ -33,6 +35,8 @@ export function SalaLayout() {
 
   const [prebrewPending, setPrebrewPending] = useState<PrebrewState | null>(null);
   const [resultPending, setResultPending]   = useState<ResultState | null>(null);
+  const [duelPrebrewPending, setDuelPrebrewPending] = useState<DuelPrebrewState | null>(null);
+  const [duelResultPending, setDuelResultPending]   = useState<DuelResultState | null>(null);
   const [nickname, setNicknameState] = useState(() => localStorage.getItem('smpj-nickname') ?? '');
 
   function setNickname(n: string) {

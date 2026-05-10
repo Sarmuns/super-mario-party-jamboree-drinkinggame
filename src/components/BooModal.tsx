@@ -3,18 +3,23 @@ import type { RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
 
 interface Props {
-  roomPlayers: RoomPlayer[];
-  myPlayerId: string;
+  roomPlayers?: RoomPlayer[];
+  myPlayerId?: string;
   multiplier: number;
-  onConfirm: (victimId: string, victimName: string, drinks: number) => void;
+  onConfirm: (booType: 'star' | 'coin', victimId: string, victimName: string) => void;
   onClose: () => void;
 }
 
 export function BooModal({ roomPlayers, myPlayerId, multiplier, onConfirm, onClose }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const others = roomPlayers.filter(p => p.playerId !== myPlayerId && p.characterId);
-  const drinks = 3 * multiplier;
+  const others = (roomPlayers ?? []).filter(p => p.playerId !== myPlayerId && p.characterId);
+  const isRoomMode = others.length > 0;
   const selected = others.find(p => p.playerId === selectedId);
+  const starDrinks = 3 * multiplier;
+  const coinDrinks = 1 * multiplier;
+
+  const victimId = selected?.playerId ?? '';
+  const victimName = selected?.name ?? '';
 
   return (
     <>
@@ -32,32 +37,15 @@ export function BooModal({ roomPlayers, myPlayerId, multiplier, onConfirm, onClo
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl bg-gray-700 shrink-0">👻</div>
               <div>
-                <div className="text-base font-bold text-white">Roubou Estrela!</div>
-                <div className="text-xs text-gray-400">Você ganha +1⭐ — a vítima perde -1⭐ e bebe {drinks} gole{drinks !== 1 ? 's' : ''}</div>
+                <div className="text-base font-bold text-white">Boo!</div>
+                <div className="text-xs text-gray-400">O que o Boo roubou?</div>
               </div>
             </div>
 
-            {/* Info box */}
-            <div className="rounded-2xl bg-gray-700/50 p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-300">
-                <span>👻 Você</span>
-                <span className="text-yellow-400 font-bold">+1⭐</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-300">
-                <span>Vítima</span>
-                <span className="text-red-400 font-bold">-1⭐ +{drinks}🍺</span>
-                {multiplier > 1 && (
-                  <span className="text-xs text-red-400 bg-red-900/40 px-1 py-0.5 rounded-full font-bold">{multiplier}x</span>
-                )}
-              </div>
-            </div>
-
-            {/* Player list */}
-            <div>
-              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Selecione a vítima</div>
-              {others.length === 0 ? (
-                <div className="text-sm text-gray-500 text-center py-4">Nenhum outro jogador na sala</div>
-              ) : (
+            {/* Victim list — room mode only */}
+            {isRoomMode && (
+              <div>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Selecione a vítima</div>
                 <div className="flex flex-col gap-2">
                   {others.map(p => (
                     <button key={p.playerId} onClick={() => setSelectedId(p.playerId)}
@@ -80,23 +68,35 @@ export function BooModal({ roomPlayers, myPlayerId, multiplier, onConfirm, onClo
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Buttons */}
-            <div className="flex gap-3">
-              <button onClick={onClose}
-                className="flex-1 py-3 rounded-2xl text-sm font-semibold text-gray-400 bg-gray-700 active:scale-95 transition-transform">
-                Cancelar
+            {/* Action buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => onConfirm('star', victimId, victimName)}
+                disabled={isRoomMode && !selected}
+                className="py-4 rounded-2xl border-2 border-yellow-500/50 bg-yellow-900/20 active:scale-95 transition-transform disabled:opacity-40 space-y-0.5">
+                <div className="text-xl">⭐</div>
+                <div className="text-xs font-bold text-yellow-400">Roubou Estrela</div>
+                <div className="text-xs text-gray-400">você +1⭐</div>
+                <div className="text-xs text-gray-400">vítima −1⭐ +{starDrinks}🍺</div>
               </button>
               <button
-                onClick={() => selected && onConfirm(selected.playerId, selected.name, drinks)}
-                disabled={!selected}
-                className="flex-1 py-3 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform disabled:opacity-40"
-                style={{ backgroundColor: 'var(--accent)' }}>
-                👻 Confirmar
+                onClick={() => onConfirm('coin', victimId, victimName)}
+                disabled={isRoomMode && !selected}
+                className="py-4 rounded-2xl border-2 border-orange-500/50 bg-orange-900/20 active:scale-95 transition-transform disabled:opacity-40 space-y-0.5">
+                <div className="text-xl">🪙</div>
+                <div className="text-xs font-bold text-orange-400">Roubou Dinheiro</div>
+                <div className="text-xs text-gray-400">sem mudança de ⭐</div>
+                <div className="text-xs text-gray-400">vítima bebe +{coinDrinks}🍺</div>
               </button>
             </div>
+
+            <button onClick={onClose}
+              className="w-full py-2.5 rounded-2xl text-sm font-semibold text-gray-400 bg-gray-700 active:scale-95 transition-transform">
+              Cancelar
+            </button>
           </div>
         </div>
       </div>

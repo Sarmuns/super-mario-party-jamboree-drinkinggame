@@ -69,6 +69,7 @@ export interface RoomEvent {
   minigameFormat?: string;
   emoji?: string;
   targetPlayerId?: string;
+  booType?: 'star' | 'coin';
 }
 
 export type RoomStatus = 'idle' | 'connecting' | 'lobby' | 'playing' | 'error';
