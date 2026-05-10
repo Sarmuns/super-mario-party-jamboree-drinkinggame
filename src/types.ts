@@ -59,7 +59,7 @@ export interface RoomPlayer {
 }
 
 export interface RoomEvent {
-  type: 'drinks_all' | 'drinks_others' | 'minigame_prebrew' | 'minigame_start' | 'minigame_skip' | 'activity';
+  type: 'drinks_all' | 'drinks_others' | 'minigame_prebrew' | 'minigame_start' | 'minigame_skip' | 'boo_steal' | 'duel_challenge' | 'duel_result' | 'activity';
   fromPlayerId: string;
   fromPlayerName: string;
   characterColor: string;
@@ -68,6 +68,7 @@ export interface RoomEvent {
   turn?: number;
   minigameFormat?: string;
   emoji?: string;
+  targetPlayerId?: string;
 }
 
 export type RoomStatus = 'idle' | 'connecting' | 'lobby' | 'playing' | 'error';

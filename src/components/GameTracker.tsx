@@ -12,6 +12,8 @@ import { MinigameModal } from './MinigameModal';
 import { PlayersOverlay } from './PlayersOverlay';
 import { PlayersStrip } from './PlayersStrip';
 import { LogTab } from './LogTab';
+import { BooModal } from './BooModal';
+import { DuelModal } from './DuelModal';
 
 interface Props {
   character: Character;
@@ -56,6 +58,8 @@ export function GameTracker({
   const [showMinigame, setShowMinigame] = useState(false);
   const [isVsMinigame, setIsVsMinigame] = useState(false);
   const [showPlayers, setShowPlayers] = useState(false);
+  const [showBoo, setShowBoo] = useState(false);
+  const [showDuel, setShowDuel] = useState(false);
 
   const multiplier = calcMultiplier(isHomestretch, isJamboree);
   const isRoomMode = !!roomPlayers;
@@ -179,6 +183,66 @@ export function GameTracker({
     }
   }
 
+  function handleBooConfirm(victimId: string, victimName: string, drinks: number) {
+    onAddStars(1);
+    if (onBroadcast) {
+      onBroadcast({
+        type: 'boo_steal',
+        fromPlayerId: roomPlayerId ?? '',
+        fromPlayerName: character.name,
+        characterColor: character.color,
+        message: `${character.name} usou o Boo em ${victimName}!`,
+        drinks,
+        targetPlayerId: victimId,
+      });
+    }
+    showToast(`👻 +1⭐ roubada de ${victimName}!`);
+    logAndBroadcast('👻', `Usou o Boo em ${victimName} — +1⭐`);
+    setShowBoo(false);
+  }
+
+  function handleDuelChallenge(opponentId: string, opponentName: string) {
+    const preDrink = 1 * multiplier;
+    onDrink(preDrink);
+    if (onBroadcast) {
+      onBroadcast({
+        type: 'duel_challenge',
+        fromPlayerId: roomPlayerId ?? '',
+        fromPlayerName: character.name,
+        characterColor: character.color,
+        message: `${character.name} te desafiou para um duelo! Beba ${preDrink} antes`,
+        drinks: preDrink,
+        targetPlayerId: opponentId,
+      });
+    }
+    logAndBroadcast('⚔️', `Desafiou ${opponentName} — bebeu ${preDrink} (pré-duelo)`);
+    showToast(`⚔️ Duelo com ${opponentName}! Pré-duelo: +${preDrink}🍺`);
+  }
+
+  function handleDuelResult(lost: boolean, opponentId: string, opponentName: string) {
+    const loserDrinks = 2 * multiplier;
+    if (lost) {
+      onDrink(loserDrinks);
+      showToast(`😅 Perdeu o duelo! 🍺 +${loserDrinks}`);
+      logAndBroadcast('😅', `Perdeu o duelo vs ${opponentName} — bebeu ${loserDrinks} goles`);
+    } else {
+      if (onBroadcast) {
+        onBroadcast({
+          type: 'duel_result',
+          fromPlayerId: roomPlayerId ?? '',
+          fromPlayerName: character.name,
+          characterColor: character.color,
+          message: `${character.name} ganhou o duelo!`,
+          drinks: loserDrinks,
+          targetPlayerId: opponentId,
+        });
+      }
+      showToast(`🏆 Ganhou o duelo vs ${opponentName}!`);
+      logAndBroadcast('🏆', `Ganhou o duelo vs ${opponentName}`);
+    }
+    setShowDuel(false);
+  }
+
   function handleAddOne() {
     onDrink(1);
     showToast('🍺 +1');
@@ -266,6 +330,18 @@ export function GameTracker({
                   Aguardando o host encerrar o turno...
                 </div>
               )}
+              {isRoomMode && roomPlayers && roomPlayerId && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setShowBoo(true)}
+                    className="py-3 rounded-2xl text-sm font-bold text-gray-300 border border-gray-600 bg-gray-800/60 active:scale-95 transition-transform">
+                    👻 Usei o Boo
+                  </button>
+                  <button onClick={() => setShowDuel(true)}
+                    className="py-3 rounded-2xl text-sm font-bold text-gray-300 border border-gray-600 bg-gray-800/60 active:scale-95 transition-transform">
+                    ⚔️ Duelo
+                  </button>
+                </div>
+              )}
               <button onClick={() => setShowEndGame(true)}
                 className="w-full py-3 rounded-2xl text-sm font-bold text-gray-400 border border-gray-700 bg-gray-800/60 active:scale-95 transition-transform">
                 🏁 Fim de Partida
@@ -292,6 +368,27 @@ export function GameTracker({
       {showPlayers && roomPlayers && roomCode && roomPlayerId && (
         <PlayersOverlay players={roomPlayers} playerId={roomPlayerId} roomCode={roomCode}
           onClose={() => setShowPlayers(false)} />
+      )}
+
+      {showBoo && roomPlayers && roomPlayerId && (
+        <BooModal
+          roomPlayers={roomPlayers}
+          myPlayerId={roomPlayerId}
+          multiplier={multiplier}
+          onConfirm={handleBooConfirm}
+          onClose={() => setShowBoo(false)}
+        />
+      )}
+
+      {showDuel && roomPlayers && roomPlayerId && (
+        <DuelModal
+          roomPlayers={roomPlayers}
+          myPlayerId={roomPlayerId}
+          multiplier={multiplier}
+          onChallenge={handleDuelChallenge}
+          onResult={handleDuelResult}
+          onClose={() => setShowDuel(false)}
+        />
       )}
     </div>
   );

@@ -103,6 +103,67 @@ export function SalaLayout() {
       return;
     }
 
+    // Targeted events — only process if this player is the intended recipient
+    const myId = room.playerId;
+
+    if (incomingEvent.type === 'boo_steal') {
+      if (incomingEvent.targetPlayerId && incomingEvent.targetPlayerId !== myId) {
+        room.dismissEvent();
+        return;
+      }
+      const drinks = incomingEvent.drinks;
+      game.addDrinks(drinks);
+      game.addStars(-1);
+      root.showToast(`👻 ${incomingEvent.fromPlayerName} usou o Boo! -1⭐ +${drinks}🍺`);
+      log.addEntry({
+        emoji: '👻',
+        message: `Boo de ${incomingEvent.fromPlayerName} — perdeu ⭐ e bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`,
+        playerName: game.state.character?.name ?? 'Você',
+        playerColor: game.state.character?.color ?? '#6366f1',
+        source: 'room',
+      });
+      room.dismissEvent();
+      return;
+    }
+
+    if (incomingEvent.type === 'duel_challenge') {
+      if (incomingEvent.targetPlayerId && incomingEvent.targetPlayerId !== myId) {
+        room.dismissEvent();
+        return;
+      }
+      const drinks = incomingEvent.drinks;
+      game.addDrinks(drinks);
+      root.showToast(`⚔️ ${incomingEvent.fromPlayerName} te desafiou! Bebe ${drinks} (pré-duelo)`);
+      log.addEntry({
+        emoji: '⚔️',
+        message: `Desafio de ${incomingEvent.fromPlayerName} — bebeu ${drinks} gole${drinks !== 1 ? 's' : ''} (pré-duelo)`,
+        playerName: game.state.character?.name ?? 'Você',
+        playerColor: game.state.character?.color ?? '#6366f1',
+        source: 'room',
+      });
+      room.dismissEvent();
+      return;
+    }
+
+    if (incomingEvent.type === 'duel_result') {
+      if (incomingEvent.targetPlayerId && incomingEvent.targetPlayerId !== myId) {
+        room.dismissEvent();
+        return;
+      }
+      const drinks = incomingEvent.drinks;
+      game.addDrinks(drinks);
+      root.showToast(`😅 Perdeu o duelo com ${incomingEvent.fromPlayerName}! +${drinks}🍺`);
+      log.addEntry({
+        emoji: '😅',
+        message: `Perdeu o duelo com ${incomingEvent.fromPlayerName} — bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`,
+        playerName: game.state.character?.name ?? 'Você',
+        playerColor: game.state.character?.color ?? '#6366f1',
+        source: 'room',
+      });
+      room.dismissEvent();
+      return;
+    }
+
     if (!room.isHost) {
       if (incomingEvent.type === 'minigame_prebrew') {
         setPrebrewPending({ hostName: incomingEvent.fromPlayerName, turn: incomingEvent.turn ?? 1 });
@@ -134,7 +195,10 @@ export function SalaLayout() {
     incomingEvent.type !== 'activity' &&
     incomingEvent.type !== 'minigame_prebrew' &&
     incomingEvent.type !== 'minigame_start' &&
-    incomingEvent.type !== 'minigame_skip';
+    incomingEvent.type !== 'minigame_skip' &&
+    incomingEvent.type !== 'boo_steal' &&
+    incomingEvent.type !== 'duel_challenge' &&
+    incomingEvent.type !== 'duel_result';
 
   const showMinigamePanel = !room.isHost && room.status === 'playing' && (prebrewPending || resultPending);
   const loserDrinks = 1 * multiplier;
