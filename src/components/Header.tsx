@@ -31,19 +31,13 @@ export function Header({
   const [animKey, setAnimKey] = useState(0);
   const prevDrinks = useRef(totalDrinks);
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [editValue, setEditValue] = useState(0);
 
   useEffect(() => {
     if (totalDrinks > prevDrinks.current) setAnimKey(k => k + 1);
     prevDrinks.current = totalDrinks;
   }, [totalDrinks]);
 
-  useEffect(() => {
-    if (isEditing) inputRef.current?.select();
-  }, [isEditing]);
-
-  // Long-press no avatar → reset
   function startLongPress() {
     longPressTimer.current = setTimeout(() => {
       if (window.confirm('Resetar o jogo? Isso apaga tudo.')) onReset();
@@ -54,13 +48,14 @@ export function Header({
   }
 
   function openEdit() {
-    setEditValue(String(totalDrinks));
+    setEditValue(totalDrinks);
     setIsEditing(true);
   }
-
   function confirmEdit() {
-    const v = parseInt(editValue, 10);
-    if (!isNaN(v)) onSetDrinks(v);
+    onSetDrinks(editValue);
+    setIsEditing(false);
+  }
+  function cancelEdit() {
     setIsEditing(false);
   }
 
@@ -133,66 +128,79 @@ export function Header({
 
       {/* Row 2: drink counter + toggles */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          {isEditing ? (
-            <input
-              ref={inputRef}
-              type="number"
-              inputMode="numeric"
-              value={editValue}
-              onChange={e => setEditValue(e.target.value)}
-              onBlur={confirmEdit}
-              onKeyDown={e => {
-                if (e.key === 'Enter') confirmEdit();
-                if (e.key === 'Escape') setIsEditing(false);
-              }}
-              className="w-16 text-3xl font-black bg-transparent border-b-2 text-center outline-none leading-none"
-              style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
-            />
-          ) : (
+        {isEditing ? (
+          /* ── Stepper mode ── */
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setEditValue(v => Math.max(0, v - 1))}
+              className="w-9 h-9 rounded-full border-2 border-gray-600 bg-gray-800 text-white text-xl font-bold flex items-center justify-center active:scale-90 transition-transform"
+            >−</button>
+
+            <span className="text-3xl font-black w-12 text-center leading-none" style={{ color: 'var(--accent)' }}>
+              {editValue}
+            </span>
+
+            <button
+              onClick={() => setEditValue(v => v + 1)}
+              className="w-9 h-9 rounded-full border-2 border-gray-600 bg-gray-800 text-white text-xl font-bold flex items-center justify-center active:scale-90 transition-transform"
+            >+</button>
+
+            <button onClick={confirmEdit}
+              className="ml-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white active:scale-95 transition-transform"
+              style={{ backgroundColor: 'var(--accent)' }}>
+              OK
+            </button>
+            <button onClick={cancelEdit}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-gray-400 bg-gray-800 border border-gray-700 active:scale-95 transition-transform">
+              Voltar
+            </button>
+          </div>
+        ) : (
+          /* ── Normal mode ── */
+          <div className="flex items-center gap-2">
             <span key={animKey} className="text-3xl font-black leading-none drink-bump" style={{ color: 'var(--accent)' }}>
               {totalDrinks}
             </span>
-          )}
-          <span className="text-xs text-gray-400">goles</span>
-          {!isEditing && (
-            <>
-              <button onClick={onAddOne}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold border border-gray-600 text-gray-300 active:scale-95 transition-transform bg-gray-800"
-                title="+1 gole">+1</button>
-              <button onClick={openEdit}
-                className="w-6 h-6 flex items-center justify-center rounded-full text-gray-600 hover:text-gray-400 active:scale-95 transition-all"
-                title="Editar goles">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-              </button>
-            </>
-          )}
-        </div>
+            <span className="text-xs text-gray-400">goles</span>
+            <button onClick={onAddOne}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold border border-gray-600 text-gray-300 active:scale-95 transition-transform bg-gray-800"
+              title="+1 gole">+1</button>
+            <button onClick={openEdit}
+              className="w-6 h-6 flex items-center justify-center rounded-full text-gray-600 hover:text-gray-400 active:scale-95 transition-all"
+              title="Editar goles">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          </div>
+        )}
 
         <div className="flex-1" />
 
-        {multiplier > 1 && (
+        {multiplier > 1 && !isEditing && (
           <span className="text-xs font-bold text-red-400 bg-red-900/40 px-1.5 py-0.5 rounded-full">
             {multiplier}x
           </span>
         )}
 
-        <button onClick={onToggleJamboree} className="shrink-0 flex flex-col items-center gap-0.5" title="Jamboree Buddy">
-          <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isJamboree ? 'bg-yellow-500' : 'bg-gray-600'}`}>
-            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isJamboree ? 'left-4' : 'left-0.5'}`} />
-          </div>
-          <span className="text-[9px] text-gray-400 leading-none">Jamboree</span>
-        </button>
+        {!isEditing && (
+          <>
+            <button onClick={onToggleJamboree} className="shrink-0 flex flex-col items-center gap-0.5" title="Jamboree Buddy">
+              <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isJamboree ? 'bg-yellow-500' : 'bg-gray-600'}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isJamboree ? 'left-4' : 'left-0.5'}`} />
+              </div>
+              <span className="text-[9px] text-gray-400 leading-none">Jamboree</span>
+            </button>
 
-        <button onClick={onToggleHomestretch} className="shrink-0 flex flex-col items-center gap-0.5" title="Últimos 5 turnos">
-          <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isHomestretch ? 'bg-red-600' : 'bg-gray-600'}`}>
-            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isHomestretch ? 'left-4' : 'left-0.5'}`} />
-          </div>
-          <span className="text-[9px] text-gray-400 leading-none">5 turnos</span>
-        </button>
+            <button onClick={onToggleHomestretch} className="shrink-0 flex flex-col items-center gap-0.5" title="Últimos 5 turnos">
+              <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isHomestretch ? 'bg-red-600' : 'bg-gray-600'}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${isHomestretch ? 'left-4' : 'left-0.5'}`} />
+              </div>
+              <span className="text-[9px] text-gray-400 leading-none">5 turnos</span>
+            </button>
+          </>
+        )}
       </div>
     </header>
   );

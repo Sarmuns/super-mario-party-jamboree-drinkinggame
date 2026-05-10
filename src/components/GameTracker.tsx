@@ -192,9 +192,14 @@ export function GameTracker({
         isHomestretch={isHomestretch} isJamboree={isJamboree} stars={stars} turn={turn} canUndo={canUndo}
         roomPlayerCount={roomPlayers?.length}
         onUseShield={handleUseShieldFromHeader} onToggleHomestretch={onToggleHomestretch}
-        onToggleJamboree={onToggleJamboree} onReset={onReset} onUndo={onUndo}
+        onToggleJamboree={onToggleJamboree} onReset={onReset}
+        onUndo={() => { onUndo(); onLog('↩', 'Desfez a última ação'); }}
         onAddOne={handleAddOne}
-        onSetDrinks={(v) => { onSetDrinks(v); showToast(`✏️ Goles ajustados para ${v}`); }}
+        onSetDrinks={(v) => {
+          onSetDrinks(v);
+          showToast(`✏️ Goles ajustados para ${v}`);
+          logAndBroadcast('✏️', `Ajustou goles manualmente para ${v}`);
+        }}
         onShowPlayers={isRoomMode ? () => setShowPlayers(true) : undefined}
       />
 

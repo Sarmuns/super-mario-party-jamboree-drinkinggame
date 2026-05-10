@@ -86,15 +86,26 @@ export function useRoom() {
       .channel(`room:${code}`, { config: { presence: { key: playerId } } })
       .on('presence', { event: 'sync' }, () => syncPresence(channelRef.current!))
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        const others = (newPresences as unknown as RoomPlayer[]).filter(p => p.playerId !== playerId && p.name);
+        // Só notifica quem tem personagem definido (filtra updates de PLACEHOLDER)
+        const others = (newPresences as unknown as RoomPlayer[]).filter(
+          p => p.playerId !== playerId && p.characterId
+        );
         if (others.length > 0) {
           setPresenceNotification(`${others[0].name || 'Alguém'} entrou na sala 👋`);
         }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const others = (leftPresences as unknown as RoomPlayer[]).filter(p => p.playerId !== playerId && p.name);
-        if (others.length > 0) {
-          setPresenceNotification(`${others[0].name || 'Alguém'} saiu da sala 👋`);
+        const ch = channelRef.current;
+        const others = (leftPresences as unknown as RoomPlayer[]).filter(
+          p => p.playerId !== playerId && p.characterId
+        );
+        if (others.length > 0 && ch) {
+          // Verifica se o player ainda está no canal (leave pode ser só um track update)
+          const stillPresent = Object.values(ch.presenceState()).flat()
+            .some((p: any) => p.playerId === others[0].playerId);
+          if (!stillPresent) {
+            setPresenceNotification(`${others[0].name || 'Alguém'} saiu da sala 💨`);
+          }
         }
       })
       .on('broadcast', { event: 'game_event' }, ({ payload }) => {

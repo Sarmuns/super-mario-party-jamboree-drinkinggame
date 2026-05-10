@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GameTracker } from '../../components/GameTracker';
 import { useSalaContext } from './SalaLayout';
@@ -7,6 +7,7 @@ export function RoomGamePage() {
   const { code } = useParams<{ code: string }>();
   const { game, room, log, showToast } = useSalaContext();
   const navigate = useNavigate();
+  const isLeavingRef = useRef(false);
 
   // Reconexão via URL — o código está na URL, sem depender de localStorage de modo
   useEffect(() => {
@@ -34,7 +35,9 @@ export function RoomGamePage() {
   }, [room.status]);
 
   // BUG-04 fix: se personagem sumiu do localStorage, redireciona para selecionar
+  // Ignora durante saída intencional (evita conflito com navigate('/'))
   useEffect(() => {
+    if (isLeavingRef.current) return;
     if (!game.state.character && room.status === 'playing') {
       navigate(`/sala/${code}/select`, { replace: true });
     }
@@ -51,8 +54,9 @@ export function RoomGamePage() {
     });
   }
 
-  function handleLeave() {
-    room.leaveRoom();
+  async function handleLeave() {
+    isLeavingRef.current = true;
+    await room.leaveRoom();
     game.resetGame();
     log.clearLog();
     navigate('/');
