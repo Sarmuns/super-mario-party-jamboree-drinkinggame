@@ -116,12 +116,16 @@ export function SalaLayout() {
         return;
       }
       const drinks = incomingEvent.drinks;
+      const isStar = incomingEvent.booType !== 'coin';
       game.addDrinks(drinks);
-      game.addStars(-1);
-      root.showToast(`👻 ${incomingEvent.fromPlayerName} usou o Boo! -1⭐ +${drinks}🍺`);
+      if (isStar) game.addStars(-1);
+      const starNote = isStar ? ' -1⭐' : '';
+      root.showToast(`👻 ${incomingEvent.fromPlayerName} usou o Boo!${starNote} +${drinks}🍺`);
       log.addEntry({
         emoji: '👻',
-        message: `Boo de ${incomingEvent.fromPlayerName} — perdeu ⭐ e bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`,
+        message: isStar
+          ? `Boo de ${incomingEvent.fromPlayerName} — perdeu ⭐ e bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`
+          : `Boo de ${incomingEvent.fromPlayerName} — perdeu dinheiro e bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`,
         playerName: game.state.character?.name ?? 'Você',
         playerColor: game.state.character?.color ?? '#6366f1',
         source: 'room',
@@ -135,16 +139,7 @@ export function SalaLayout() {
         room.dismissEvent();
         return;
       }
-      const drinks = incomingEvent.drinks;
-      game.addDrinks(drinks);
-      root.showToast(`⚔️ ${incomingEvent.fromPlayerName} te desafiou! Bebe ${drinks} (pré-duelo)`);
-      log.addEntry({
-        emoji: '⚔️',
-        message: `Desafio de ${incomingEvent.fromPlayerName} — bebeu ${drinks} gole${drinks !== 1 ? 's' : ''} (pré-duelo)`,
-        playerName: game.state.character?.name ?? 'Você',
-        playerColor: game.state.character?.color ?? '#6366f1',
-        source: 'room',
-      });
+      setDuelPrebrewPending({ challengerName: incomingEvent.fromPlayerName, drinks: incomingEvent.drinks });
       room.dismissEvent();
       return;
     }
@@ -154,16 +149,7 @@ export function SalaLayout() {
         room.dismissEvent();
         return;
       }
-      const drinks = incomingEvent.drinks;
-      game.addDrinks(drinks);
-      root.showToast(`😅 Perdeu o duelo com ${incomingEvent.fromPlayerName}! +${drinks}🍺`);
-      log.addEntry({
-        emoji: '😅',
-        message: `Perdeu o duelo com ${incomingEvent.fromPlayerName} — bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`,
-        playerName: game.state.character?.name ?? 'Você',
-        playerColor: game.state.character?.color ?? '#6366f1',
-        source: 'room',
-      });
+      setDuelResultPending({ challengerName: incomingEvent.fromPlayerName, drinks: incomingEvent.drinks });
       room.dismissEvent();
       return;
     }
@@ -277,6 +263,71 @@ export function SalaLayout() {
                     setPrebrewPending(null);
                   }}
                 />
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Painel de duelo para o desafiado */}
+      {(duelPrebrewPending || duelResultPending) && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/75" />
+          <div className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-end md:justify-center md:p-4">
+            <div className="bg-gray-800 rounded-t-3xl md:rounded-3xl w-full md:max-w-md shadow-2xl overflow-hidden"
+              style={{ borderTop: '3px solid #ef4444' }}>
+              <div className="flex justify-center pt-3 pb-1 md:hidden">
+                <div className="w-10 h-1 rounded-full bg-gray-600" />
+              </div>
+
+              {duelResultPending && (
+                <div className="px-5 py-4 space-y-3">
+                  <div>
+                    <div className="text-xs text-gray-400">⚔️ Duelo — resultado</div>
+                    <div className="text-sm font-bold text-white mt-0.5">{duelResultPending.challengerName} ganhou o duelo</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const d = duelResultPending.drinks;
+                      game.addDrinks(d);
+                      root.showToast(`😅 Perdeu o duelo! 🍺 +${d}`);
+                      log.addEntry({ emoji: '😅', message: `Perdeu o duelo com ${duelResultPending.challengerName} — bebeu ${d} gole${d !== 1 ? 's' : ''}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'room' });
+                      setDuelResultPending(null);
+                    }}
+                    className="w-full py-3 rounded-2xl text-sm font-bold border-2 border-red-500/50 bg-red-900/20 text-red-400 active:scale-95 transition-transform">
+                    😅 Perdi — beber +{duelResultPending.drinks}🍺
+                  </button>
+                </div>
+              )}
+
+              {duelResultPending && duelPrebrewPending && (
+                <div className="mx-5 border-t border-gray-600/60" />
+              )}
+
+              {duelPrebrewPending && (
+                <div className="px-5 py-4 flex items-center gap-4">
+                  <div className="shrink-0 text-center">
+                    <div className="text-3xl">⚔️</div>
+                    <div className="text-2xl font-black text-white leading-none mt-1">{duelPrebrewPending.drinks}</div>
+                    <div className="text-[10px] text-gray-400">gole{duelPrebrewPending.drinks !== 1 ? 's' : ''}</div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-400 leading-none">{duelPrebrewPending.challengerName} te desafiou</div>
+                    <div className="text-sm font-bold text-white mt-0.5">Beba antes do duelo</div>
+                    <div className="text-xs text-gray-500">{multiplier > 1 ? `(${multiplier}x ativo)` : 'pré-duelo obrigatório'}</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const d = duelPrebrewPending.drinks;
+                      game.addDrinks(d);
+                      root.showToast(`⚔️ +${d}🍺 (pré-duelo)`);
+                      log.addEntry({ emoji: '⚔️', message: `Desafio de ${duelPrebrewPending.challengerName} — bebeu ${d} gole${d !== 1 ? 's' : ''} (pré-duelo)`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'room' });
+                      setDuelPrebrewPending(null);
+                    }}
+                    className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold text-white active:scale-95 transition-transform bg-red-700">
+                    Bebi! ✓
+                  </button>
+                </div>
               )}
             </div>
           </div>
