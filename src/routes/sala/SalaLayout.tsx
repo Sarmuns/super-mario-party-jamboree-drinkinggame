@@ -154,6 +154,18 @@ export function SalaLayout() {
       return;
     }
 
+    if (incomingEvent.type === 'duel_cancelled') {
+      if (incomingEvent.targetPlayerId && incomingEvent.targetPlayerId !== myId) {
+        room.dismissEvent();
+        return;
+      }
+      setDuelPrebrewPending(null);
+      setDuelResultPending(null);
+      root.showToast(`⚔️ ${incomingEvent.fromPlayerName} cancelou o duelo`);
+      room.dismissEvent();
+      return;
+    }
+
     if (!room.isHost) {
       if (incomingEvent.type === 'minigame_prebrew') {
         setPrebrewPending({ hostName: incomingEvent.fromPlayerName, turn: incomingEvent.turn ?? 1 });
@@ -181,16 +193,22 @@ export function SalaLayout() {
     }
   }, [incomingEvent]);
 
+  const showMinigamePanel = !room.isHost && room.status === 'playing' && (prebrewPending || resultPending);
+  const showDuelPanel = !!(duelPrebrewPending || duelResultPending);
+  const anyPanelActive = showMinigamePanel || showDuelPanel;
+
+  // Drink events are suppressed while any bottom-sheet panel is active.
+  // The event stays queued in incomingEvent and surfaces once the panel is dismissed.
   const isDrinkEvent = incomingEvent &&
+    !anyPanelActive &&
     incomingEvent.type !== 'activity' &&
     incomingEvent.type !== 'minigame_prebrew' &&
     incomingEvent.type !== 'minigame_start' &&
     incomingEvent.type !== 'minigame_skip' &&
     incomingEvent.type !== 'boo_steal' &&
     incomingEvent.type !== 'duel_challenge' &&
-    incomingEvent.type !== 'duel_result';
-
-  const showMinigamePanel = !room.isHost && room.status === 'playing' && (prebrewPending || resultPending);
+    incomingEvent.type !== 'duel_result' &&
+    incomingEvent.type !== 'duel_cancelled';
   const loserDrinks = 1 * multiplier;
   const prebrewDrinks = 1 * multiplier;
 
@@ -270,7 +288,7 @@ export function SalaLayout() {
       )}
 
       {/* Painel de duelo para o desafiado */}
-      {(duelPrebrewPending || duelResultPending) && (
+      {showDuelPanel && (
         <>
           <div className="fixed inset-0 z-40 bg-black/75" />
           <div className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-end md:justify-center md:p-4">

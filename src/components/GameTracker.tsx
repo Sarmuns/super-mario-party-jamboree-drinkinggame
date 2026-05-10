@@ -231,6 +231,25 @@ export function GameTracker({
     showToast(`⚔️ Duelo${label ? ' ' + label : ''}! Pré-duelo: +${preDrink}🍺`);
   }
 
+  function handleDuelCancel(opponentId: string, opponentName: string) {
+    const isCpu = opponentId === '__cpu__' || !opponentId;
+    if (!isCpu && onBroadcast) {
+      onBroadcast({
+        type: 'duel_cancelled',
+        fromPlayerId: roomPlayerId ?? '',
+        fromPlayerName: character.name,
+        characterColor: character.color,
+        message: `${character.name} cancelou o duelo`,
+        drinks: 0,
+        targetPlayerId: opponentId,
+      });
+    }
+    const label = opponentName && opponentName !== 'oponente' ? ` vs ${opponentName}` : '';
+    showToast(`⚔️ Duelo${label} cancelado`);
+    onLog('⚔️', `Duelo${label} cancelado`);
+    setShowDuel(false);
+  }
+
   function handleDuelResult(lost: boolean, opponentId: string, opponentName: string) {
     const loserDrinks = 2 * multiplier;
     const isCpu = opponentId === '__cpu__' || !opponentId;
@@ -392,6 +411,7 @@ export function GameTracker({
           multiplier={multiplier}
           onChallenge={handleDuelChallenge}
           onResult={handleDuelResult}
+          onCancelAfterChallenge={handleDuelCancel}
           onClose={() => setShowDuel(false)}
         />
       )}

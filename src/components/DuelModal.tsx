@@ -10,12 +10,13 @@ interface Props {
   multiplier: number;
   onChallenge: (opponentId: string, opponentName: string) => void;
   onResult: (lost: boolean, opponentId: string, opponentName: string) => void;
+  onCancelAfterChallenge: (opponentId: string, opponentName: string) => void;
   onClose: () => void;
 }
 
 const CPU_ID = '__cpu__';
 
-export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, onResult, onClose }: Props) {
+export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, onResult, onCancelAfterChallenge, onClose }: Props) {
   const others = (roomPlayers ?? []).filter(p => p.playerId !== myPlayerId && p.characterId);
   const hasPeers = others.length > 0;
 
@@ -47,7 +48,7 @@ export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, on
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/75" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/75" onClick={phase === 'result' ? () => onCancelAfterChallenge(selectedId ?? '', selectedName) : onClose} />
       <div className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-end md:justify-center md:p-4">
         <div className="bg-gray-800 rounded-t-3xl md:rounded-3xl w-full md:max-w-md shadow-2xl border-t-[3px]"
           style={{ borderColor: 'var(--accent)' }}>
@@ -160,9 +161,9 @@ export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, on
                   </button>
                 </div>
 
-                <button onClick={onClose}
+                <button onClick={() => onCancelAfterChallenge(selectedId ?? '', selectedName)}
                   className="w-full py-2.5 rounded-2xl text-xs font-semibold text-gray-500 bg-gray-700/60 active:scale-95 transition-transform">
-                  Cancelar
+                  Cancelar duelo
                 </button>
               </>
             )}
