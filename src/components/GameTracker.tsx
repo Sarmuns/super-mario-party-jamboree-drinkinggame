@@ -81,7 +81,6 @@ export function GameTracker({
   function handleRoll1() {
     if (hasShield) {
       showToast('Já tem escudo! 🛡️');
-      onLog('🛡️', 'Tentou tirar escudo, mas já tem um');
     } else {
       onActivateShield();
       showToast('Escudo ativado! 🛡️');

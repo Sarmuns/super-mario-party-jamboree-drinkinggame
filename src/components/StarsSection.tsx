@@ -1,3 +1,19 @@
+import { useState } from 'react';
+
+interface StarEvent {
+  emoji: string;
+  label: string;
+  description: string;
+  base: number;
+  starDelta: number;
+}
+
+const starEvents: StarEvent[] = [
+  { emoji: '⭐', label: 'Comprei estrela',  description: 'Comprou a estrela por 20 moedas', base: 2, starDelta:  1 },
+  { emoji: '💀', label: 'Estrela roubada',  description: 'Boo, Bowser, Chance Time...',     base: 3, starDelta: -1 },
+  { emoji: '😭', label: 'Passei sem grana', description: 'Sem as 20 moedas na hora certa', base: 4, starDelta:  0 },
+];
+
 interface Props {
   multiplier: number;
   characterName?: string;
@@ -7,22 +23,19 @@ interface Props {
   onActivity?: (emoji: string, msg: string) => void;
 }
 
-const starEvents = [
-  { emoji: '⭐', label: 'Comprei estrela',  base: 2, starDelta:  1, description: 'Comprou a estrela' },
-  { emoji: '💀', label: 'Estrela roubada',  base: 3, starDelta: -1, description: 'Boo, Bowser, Chance Time...' },
-  { emoji: '😭', label: 'Passei sem grana', base: 4, starDelta:  0, description: 'Sem as 20 moedas' },
-];
+export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onActivity }: Props) {
+  const [pending, setPending] = useState<StarEvent | null>(null);
 
-export function StarsSection({ multiplier, characterName, onDrink, onStarChange, showToast, onActivity }: Props) {
-  function handle(ev: typeof starEvents[number]) {
-    const count = ev.base * multiplier;
+  function confirm() {
+    if (!pending) return;
+    const count = pending.base * multiplier;
     onDrink(count);
-    if (ev.starDelta !== 0) onStarChange(ev.starDelta);
-    const starMsg = ev.starDelta > 0 ? ' ⭐+1' : ev.starDelta < 0 ? ' ⭐-1' : '';
-    showToast(`${ev.emoji} ${ev.label}: 🍺 ${count} gole${count !== 1 ? 's' : ''}${starMsg}`);
-    if (characterName) {
-      onActivity?.(ev.emoji, `${characterName}: ${ev.label} — ${count} gole${count !== 1 ? 's' : ''}${starMsg}`);
-    }
+    if (pending.starDelta !== 0) onStarChange(pending.starDelta);
+
+    const starNote = pending.starDelta > 0 ? ' ⭐+1' : pending.starDelta < 0 ? ' ⭐-1' : '';
+    showToast(`${pending.emoji} ${pending.label}: 🍺 ${count} gole${count !== 1 ? 's' : ''}${starNote}`);
+    onActivity?.(pending.emoji, `${pending.label} — bebeu ${count} gole${count !== 1 ? 's' : ''}${starNote}`);
+    setPending(null);
   }
 
   return (
@@ -32,7 +45,7 @@ export function StarsSection({ multiplier, characterName, onDrink, onStarChange,
         {starEvents.map(ev => {
           const count = ev.base * multiplier;
           return (
-            <button key={ev.label} onClick={() => handle(ev)}
+            <button key={ev.label} onClick={() => setPending(ev)}
               className="flex items-center gap-3 w-full px-4 py-4 rounded-2xl bg-gray-800 border border-gray-700 active:scale-[0.98] transition-transform text-left">
               <span className="text-2xl shrink-0">{ev.emoji}</span>
               <div className="flex-1 min-w-0">
@@ -47,6 +60,76 @@ export function StarsSection({ multiplier, characterName, onDrink, onStarChange,
           );
         })}
       </div>
+
+      {/* Modal de confirmação */}
+      {pending && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/70" onClick={() => setPending(null)} />
+          <div className="fixed inset-x-0 bottom-0 z-50 md:inset-0 md:flex md:items-center md:justify-center md:p-4">
+            <div className="bg-gray-800 rounded-t-3xl md:rounded-3xl w-full md:max-w-md shadow-2xl border-t-[3px]"
+              style={{ borderColor: 'var(--accent)' }}>
+
+              <div className="flex justify-center pt-3 pb-1 md:hidden">
+                <div className="w-10 h-1 rounded-full bg-gray-600" />
+              </div>
+
+              <div className="px-5 pb-6 pt-3 space-y-4">
+                {/* Header */}
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-4xl shrink-0 bg-gray-700">
+                    {pending.emoji}
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-white">{pending.label}</div>
+                    <div className="text-xs text-gray-400">{pending.description}</div>
+                  </div>
+                </div>
+
+                {/* Consequências */}
+                <div className="rounded-2xl bg-gray-700/50 p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🍺</span>
+                      <span className="text-sm font-bold text-white">Você bebe</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-2xl font-black text-white">{pending.base * multiplier}</span>
+                      <span className="text-xs text-gray-400">goles</span>
+                      {multiplier > 1 && (
+                        <span className="text-xs text-red-400 bg-red-900/40 px-1 py-0.5 rounded-full font-bold ml-1">{multiplier}x</span>
+                      )}
+                    </div>
+                  </div>
+                  {pending.starDelta !== 0 && (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-600">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">⭐</span>
+                        <span className="text-sm text-gray-300">Estrelas</span>
+                      </div>
+                      <span className={`text-sm font-bold ${pending.starDelta > 0 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {pending.starDelta > 0 ? '+1' : '-1'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Botões */}
+                <div className="flex gap-3">
+                  <button onClick={() => setPending(null)}
+                    className="flex-1 py-3 rounded-2xl text-sm font-semibold text-gray-400 bg-gray-700 active:scale-95 transition-transform">
+                    Cancelar
+                  </button>
+                  <button onClick={confirm}
+                    className="flex-1 py-3 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform"
+                    style={{ backgroundColor: 'var(--accent)' }}>
+                    Confirmar ✓
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }

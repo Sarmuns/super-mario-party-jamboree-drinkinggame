@@ -59,10 +59,21 @@ export function SalaLayout() {
         totalDrinks: game.state.totalDrinks,
         stars: game.state.stars,
         hasShield: game.state.hasShield,
+        // Host também publica o turno para guests sincronizarem
+        ...(room.isHost ? { turn: game.state.turn } : {}),
       });
     }, 400);
     return () => { if (syncRef.current) clearTimeout(syncRef.current); };
   }, [game.state.totalDrinks, game.state.stars, game.state.hasShield, room.status]);
+
+  // Guests sincronizam turno com o host via presence
+  useEffect(() => {
+    if (room.isHost || room.status !== 'playing') return;
+    const host = room.players.find(p => p.isHost && p.turn !== undefined);
+    if (host?.turn && host.turn !== game.state.turn) {
+      game.setTurn(host.turn);
+    }
+  }, [room.players]);
 
   // Notificações de presença
   useEffect(() => {
@@ -135,8 +146,15 @@ export function SalaLayout() {
           event={incomingEvent!}
           hasShield={game.state.hasShield}
           multiplier={multiplier}
-          onDrink={game.addDrinks}
-          onUseShield={() => { game.useShield(); root.showToast('Escudo usado! 🛡️'); }}
+          onDrink={(count) => {
+            game.addDrinks(count);
+            log.addEntry({ emoji: '🍺', message: `${incomingEvent!.message} — bebeu ${count} gole${count !== 1 ? 's' : ''}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
+          }}
+          onUseShield={() => {
+            game.useShield();
+            root.showToast('Escudo usado! 🛡️');
+            log.addEntry({ emoji: '🛡️', message: `Escudo usado — ${incomingEvent!.message}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
+          }}
           onDismiss={room.dismissEvent}
         />
       )}
@@ -162,8 +180,10 @@ export function SalaLayout() {
                     if (lost) {
                       game.addDrinks(loserDrinks);
                       root.showToast(`😅 Perdeu! 🍺 +${loserDrinks}`);
+                      log.addEntry({ emoji: '😅', message: `Minigame — perdeu, bebeu ${loserDrinks} gole${loserDrinks !== 1 ? 's' : ''}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
                     } else {
                       root.showToast('🏆 Ganhou o minigame!');
+                      log.addEntry({ emoji: '🏆', message: 'Minigame — ganhou!', playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
                     }
                     setResultPending(null);
                   }}
@@ -184,6 +204,7 @@ export function SalaLayout() {
                   onConfirm={() => {
                     game.addDrinks(prebrewDrinks);
                     root.showToast(`🍺 +${prebrewDrinks} (pré-minigame)`);
+                    log.addEntry({ emoji: '🍺', message: `Pré-minigame — bebeu ${prebrewDrinks} gole${prebrewDrinks !== 1 ? 's' : ''}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
                     setPrebrewPending(null);
                   }}
                 />

@@ -53,8 +53,9 @@ export interface RoomPlayer {
   hasShield: boolean;
   isHost: boolean;
   joinedAt: number;
-  trackTimestamp?: number;   // usado para deduplicação no sync
+  trackTimestamp?: number;
   gameStatus?: 'lobby' | 'playing';
+  turn?: number; // turno atual do host — guests sincronizam com isso
 }
 
 export interface RoomEvent {
