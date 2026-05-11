@@ -1,104 +1,105 @@
-# 🍺 Super Mario Party Jamboree — Drinking Game Tracker
+# 🍺 SMPJ Drinking Game
 
-App web **mobile-first** para acompanhar um drinking game baseado no **Super Mario Party Jamboree**. Cada jogador acessa no próprio celular, escolhe seu personagem e registra os eventos da partida — o app calcula e exibe quantos goles você deve tomar.
+Um tracker de drinking game para o **Super Mario Party Jamboree**, feito pra jogar no celular enquanto joga no Nintendo Switch.
 
----
+A ideia é simples: cada pessoa abre o app no próprio celular, escolhe seu personagem e vai registrando o que acontece na partida — o app rastreia quantos goles você tomou, suas estrelas, o turno atual e aplica multiplicadores automáticos no fim do jogo.
 
-## Funcionalidades
-
-### Seleção de personagem
-- Grid com os 22 personagens jogáveis do SMPJ
-- Tap seleciona o personagem com destaque visual na cor dele
-- A UI inteira muda de cor de acordo com o personagem escolhido (contador, títulos, borda do avatar, etc.)
-- Seleção salva no `localStorage` — recarregar a página volta direto pro jogo
-
-### Tracker de partida
-- **Casas**: grid 3×3 com as 9 casas jogáveis. Tap abre um modal com a regra, o número de goles e botões de ação
-- **Dado**: botões para registrar tirou 1 (ativa escudo) ou tirou 10 (imposto da sorte)
-- **Estrelas**: 3 eventos — comprou estrela, estrela roubada, passou sem grana
-- **Regras de mesa**: accordion colapsável com as regras que não precisam de registro (minigames, Lucky Space, Chance Time, etc.)
-
-### Mecânica do escudo
-- Ativado automaticamente ao registrar dado 1
-- Máximo de 1 escudo por vez
-- Pode ser usado pelo botão no header ou dentro do modal de uma casa
-- Consome o escudo sem somar goles
-
-### Últimos 5 turnos (Homestretch)
-- Toggle no header
-- Quando ativo, **todas as punições dobram**
-- Badge `2x` aparece no contador e o fundo do header fica avermelhado
-
-### Contador de goles
-- Número grande sempre visível no header
-- Animação com bounce + flash verde ao somar goles
-- Vibração tátil no celular a cada dose registrada
-
-### Undo
-- Botão "↩ Undo" sempre visível no header
-- Desfaz a última ação (goles, escudo ativado ou usado)
-- Fica opaco quando não há nada para desfazer
-
-### Fim de partida
-- Botão "🏁 Fim de Partida" no final da página
-- Modal com o portrait do personagem, total de goles e uma mensagem baseada no seu desempenho
-- Opção de jogar de novo (reseta tudo) ou fechar e continuar
-
-### Reset
-- Botão de setas (↺) discreto no header — pede confirmação antes de resetar
-- Long press no avatar também reseta
+Funciona offline (modo solo) ou em **sala multiplayer** onde todo mundo se conecta e vê os eventos dos outros em tempo real.
 
 ---
 
-## Stack
+## As Casas
 
-| | |
-|---|---|
-| Framework | React 19 + TypeScript |
-| Build | Vite 8 |
-| Estilo | Tailwind CSS v4 |
-| Dados | JSONs locais (`src/data/`) |
-| Persistência | `localStorage` |
-| Deploy | Vercel (estático) |
+Cada casa do tabuleiro tem um efeito diferente. No app, você toca na casa que caiu e ele já calcula os goles aplicando o multiplicador do momento.
+
+| Casa | Ícone | Efeito no jogo | Regra de beber |
+|------|-------|----------------|----------------|
+| **Casa Azul** | ![Blue](public/assets/casas/64px-SMPJ_Blue_Space.png) | Ganha 3 moedas | Nada — você tá bem |
+| **Casa Vermelha** | ![Red](public/assets/casas/64px-SMPJ_Red_Space.png) | Perde 3 moedas | 1 gole |
+| **Casa da Sorte** | ![Lucky](public/assets/casas/64px-SMPJ_Lucky_Space.png) | Roleta com prêmios | Todos os outros bebem 1 |
+| **Casa do Azar** | ![Unlucky](public/assets/casas/64px-SMPJ_Unlucky_Space.png) | Roleta com punições | 2 goles |
+| **Casa de Evento** | ![Event](public/assets/casas/64px-SMPJ_Event_Space.png) | Evento exclusivo do tabuleiro | 1 gole — o caos tem preço |
+| **Casa de Item** | ![Item](public/assets/casas/64px-SMPJ_Item_Space.png) | Minigame de item ou roleta | Só bebe se cair Loadstone (+1) |
+| **Casa do Bowser** | ![Bowser](public/assets/casas/64px-SMPJ_Bowser_Space.png) | Impostor Bowser aparece e te pune | 3 goles. Perdeu estrela? Vira o copo |
+| **Chance Time** | ![Chance Time](public/assets/casas/64px-SMPJ_Chance_Time_Space.png) | Roleta de troca de moedas/estrelas | Todos bebem 1. Quem saiu prejudicado bebe +1 |
+| **Casa VS** | ![VS](public/assets/casas/64px-SMPJ_VS_Space.png) | Todos apostam moedas e jogam um minigame | Segue regra de minigame (beba 1 antes, perdedor +1) |
+
+### Dado
+
+- **Tirou 1** → ativa um escudo que bloqueia o próximo dano
+- **Tirou 10** → imposto da sorte, bebe 1 gole
+
+### Estrelas
+
+- **Comprou estrela** → bebe 2 goles (+1⭐)
+- **Estrela roubada** (Boo, Bowser, Chance Time...) → bebe 3 goles (-1⭐)
+- **Passou sem grana** → bebe 4 goles, sem estrela mesmo
 
 ---
 
-## Rodando localmente
+## Multiplicadores
+
+O jogo vai ficando mais pesado conforme o fim se aproxima:
+
+| Situação | Multiplicador |
+|----------|--------------|
+| Normal | 1× |
+| Jamboree Buddy ativo | 2× |
+| Últimos 5 turnos | 2× |
+| Buddy + Últimos 5 turnos | 3× |
+
+O header deixa claro quando algum multiplicador tá ativo.
+
+---
+
+## Minigames
+
+Ao fim de cada turno, o host abre o painel de minigame. Todos bebem 1 gole antes de jogar. Depois:
+
+| Formato | Regra |
+|---------|-------|
+| **FFA** | Último lugar bebe +1 |
+| **2v2** | Dupla perdedora bebe +1 cada |
+| **1v3** | Lado perdedor bebe +1 cada |
+
+---
+
+## Boo e Duelo
+
+Além das casas do tabuleiro, tem dois eventos que podem acontecer a qualquer momento:
+
+**👻 Boo** — você usou o Boo e roubou de alguém:
+- Roubou estrela → você +1⭐, vítima -1⭐ e bebe 3 goles
+- Roubou dinheiro → vítima bebe 1 gole
+
+**⚔️ Duelo** — desafio 1v1:
+- Ambos bebem 1 gole antes
+- Perdedor bebe +2 goles
+- Funciona contra outros jogadores ou contra CPU
+
+---
+
+## Modo Multiplayer
+
+Crie uma sala e compartilhe o código (ou QR Code) com os outros jogadores. Cada um entra no próprio celular e escolhe um personagem — personagens já escolhidos ficam bloqueados.
+
+O host controla o andamento da partida: é ele quem encerra o turno e abre o painel de minigame. Os outros jogadores recebem os eventos em tempo real (pré-bebida, formato, resultado).
+
+Eventos como Chance Time, Roubou Estrela e Duelo afetam jogadores específicos automaticamente — quem recebe o evento vê um card pedindo pra beber.
+
+---
+
+## Como rodar localmente
 
 ```bash
 npm install
 npm run dev
 ```
 
-Acesse `http://localhost:5173` no navegador ou no celular (mesma rede local, usando o IP da máquina).
-
-```bash
-npm run build   # build de produção
-```
+Acesse `http://localhost:5173`. Para testar no celular, use o IP da máquina na mesma rede.
 
 ---
 
-## Estrutura
+## Stack
 
-```
-src/
-  components/
-    CharacterSelect.tsx   # tela de seleção de personagem
-    GameTracker.tsx       # tela principal do jogo
-    Header.tsx            # header fixo com contador e controles
-    SpacesSection.tsx     # grid de casas
-    SpaceModal.tsx        # modal/bottom sheet de cada casa
-    DiceSection.tsx       # botões de dado
-    StarsSection.tsx      # eventos de estrela
-    RulesSection.tsx      # regras de mesa (accordion)
-    EndGameModal.tsx      # tela de fim de partida
-    ImageWithFallback.tsx # imagem com fallback de letra colorida
-    Toast.tsx             # notificações temporárias
-  hooks/
-    useGameState.ts       # estado global + localStorage + undo
-    useToast.ts           # sistema de toasts
-  data/
-    smpj-characters.json       # 22 personagens com cores e imagens
-    smpj-drinking-game-data.json  # casas, dados, estrelas e regras
-  types.ts
-```
+React 19 + TypeScript · Vite 8 · Tailwind CSS v4 · Supabase Realtime · Deploy na Vercel
