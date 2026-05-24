@@ -43,7 +43,7 @@ export function RoomSelectPage() {
   async function handleStart(character: Character) {
     game.selectCharacter(character);
     await room.selectRoomCharacter(character, nickname.trim() || undefined);
-    navigate(`/sala/${code}/lobby`);
+    navigate(`/sala/${code}/${room.status === 'playing' ? 'game' : 'lobby'}`, { replace: room.status === 'playing' });
   }
 
   return (

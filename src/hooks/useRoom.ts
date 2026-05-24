@@ -243,11 +243,14 @@ export function useRoom() {
             return;
           }
 
+          const hostPlayer = others.find(p => p.isHost);
+          const actualStatus: 'lobby' | 'playing' = hostPlayer?.gameStatus ?? 'lobby';
+
           const state: RoomPlayer = { ...PLACEHOLDER, playerId, isHost: false, joinedAt: Date.now() };
           await trackPlayer(channel, state);
           setRoomCode(code);
-          setStatus('lobby');
-          saveSession({ code, isHost: false, status: 'lobby' });
+          setStatus(actualStatus);
+          saveSession({ code, isHost: false, status: actualStatus });
           resolve(true);
         } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') {
           setError('Erro ao entrar na sala.');
