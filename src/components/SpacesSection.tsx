@@ -3,6 +3,7 @@ import type { Space } from '../types';
 import type { RoomEvent } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
 import { SpaceModal } from './SpaceModal';
+import { t } from '../lib/labels';
 import gameData from '../data/smpj-drinking-game-data.json';
 
 const EXCLUDED_SPACES = new Set(['start', 'star_exchange']);
@@ -35,17 +36,17 @@ export function SpacesSection({
 
   function handleDrink(count: number) {
     onDrink(count);
-    showToast(`🍺 +${count} gole${count !== 1 ? 's' : ''}!`);
+    showToast(t.spacesSection.drinkToast(count));
   }
 
   function handleShield() {
     onUseShield();
-    showToast('Escudo usado! Dose pulada 🛡️');
+    showToast(t.spacesSection.shieldUsed);
   }
 
   return (
     <section className="px-4 py-4">
-      <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>Casas</h2>
+      <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>{t.spacesSection.title}</h2>
       <div className="grid grid-cols-3 gap-2">
         {playableSpaces.map(space => (
           <button key={space.id} onClick={() => setActiveSpace(space)}

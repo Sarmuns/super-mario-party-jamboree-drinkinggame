@@ -2,10 +2,10 @@ import { useState } from 'react';
 import type { Character, RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
 import characters from '../data/smpj-characters.json';
+import { t } from '../lib/labels';
 
 interface Props {
   onStart: (character: Character) => void;
-  // Modo sala: jogadores já na sala (para travar personagens)
   roomPlayers?: RoomPlayer[];
   myPlayerId?: string;
 }
@@ -13,7 +13,6 @@ interface Props {
 export function CharacterSelect({ onStart, roomPlayers, myPlayerId }: Props) {
   const [selected, setSelected] = useState<Character | null>(null);
 
-  // Personagens tomados por OUTROS jogadores (com personagem já selecionado)
   const takenMap = new Map<string, RoomPlayer>();
   if (roomPlayers && myPlayerId) {
     for (const p of roomPlayers) {
@@ -26,17 +25,17 @@ export function CharacterSelect({ onStart, roomPlayers, myPlayerId }: Props) {
   const isRoomMode = !!roomPlayers;
 
   function handleSelect(char: Character) {
-    if (takenMap.has(char.id)) return; // bloqueado
+    if (takenMap.has(char.id)) return;
     setSelected(char);
   }
 
   return (
     <div className="min-h-dvh bg-gray-900 flex flex-col">
       <div className="px-4 pt-8 pb-4 text-center">
-        <div className="text-3xl font-bold text-white mb-1">Mario Party</div>
-        <div className="text-lg text-yellow-400 font-semibold">Drinking Game 🍺</div>
+        <div className="text-3xl font-bold text-white mb-1">{t.characterSelect.title}</div>
+        <div className="text-lg text-yellow-400 font-semibold">{t.characterSelect.subtitle}</div>
         <p className="text-gray-400 text-sm mt-2">
-          {isRoomMode ? 'Escolha seu personagem — personagens em uso estão bloqueados' : 'Escolha seu personagem'}
+          {isRoomMode ? t.characterSelect.subtitleRoom : t.characterSelect.subtitleOffline}
         </p>
       </div>
 
@@ -61,7 +60,6 @@ export function CharacterSelect({ onStart, roomPlayers, myPlayerId }: Props) {
                   cursor: isTaken ? 'not-allowed' : 'pointer',
                 }}
               >
-                {/* Checkmark se selecionado */}
                 {isSelected && (
                   <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white z-10"
                     style={{ backgroundColor: char.color }}>
@@ -69,7 +67,6 @@ export function CharacterSelect({ onStart, roomPlayers, myPlayerId }: Props) {
                   </div>
                 )}
 
-                {/* Badge de quem está usando */}
                 {isTaken && takenBy.name && (
                   <div className="absolute top-2 left-2 right-2 flex items-center gap-1 z-10">
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: takenBy.characterColor }} />
@@ -88,7 +85,7 @@ export function CharacterSelect({ onStart, roomPlayers, myPlayerId }: Props) {
                   {char.name}
                 </span>
                 {isTaken && (
-                  <span className="text-xs text-gray-600">em uso</span>
+                  <span className="text-xs text-gray-600">{t.characterSelect.inUse}</span>
                 )}
               </button>
             );
@@ -103,7 +100,9 @@ export function CharacterSelect({ onStart, roomPlayers, myPlayerId }: Props) {
           className="w-full py-4 rounded-2xl text-lg font-bold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-white"
           style={{ backgroundColor: selected ? selected.color : '#374151' }}
         >
-          {selected ? `${isRoomMode ? 'Confirmar' : 'Jogar com'} ${selected.name}!` : 'Selecione um personagem'}
+          {selected
+            ? (isRoomMode ? `${t.characterSelect.confirm} ${selected.name}!` : t.characterSelect.playWith(selected.name))
+            : t.characterSelect.selectFirst}
         </button>
       </div>
     </div>

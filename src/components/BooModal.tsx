@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
+import { playerDisplayName } from '../lib/characterLookup';
+import { t } from '../lib/labels';
 
 interface Props {
   roomPlayers?: RoomPlayer[];
@@ -10,6 +12,8 @@ interface Props {
   onClose: () => void;
 }
 
+const COM_ID = '__com__';
+
 export function BooModal({ roomPlayers, myPlayerId, multiplier, onConfirm, onClose }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const others = (roomPlayers ?? []).filter(p => p.playerId !== myPlayerId && p.characterId);
@@ -18,8 +22,8 @@ export function BooModal({ roomPlayers, myPlayerId, multiplier, onConfirm, onClo
   const starDrinks = 3 * multiplier;
   const coinDrinks = 1 * multiplier;
 
-  const victimId = selected?.playerId ?? '';
-  const victimName = selected?.name ?? '';
+  const victimId   = selectedId === COM_ID ? COM_ID : (selected?.playerId ?? '');
+  const victimName = selectedId === COM_ID ? t.boo.com : (selected ? playerDisplayName(selected) : '');
 
   return (
     <>
@@ -37,15 +41,15 @@ export function BooModal({ roomPlayers, myPlayerId, multiplier, onConfirm, onClo
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl bg-gray-700 shrink-0">👻</div>
               <div>
-                <div className="text-base font-bold text-white">Boo!</div>
-                <div className="text-xs text-gray-400">O que o Boo roubou?</div>
+                <div className="text-base font-bold text-white">{t.boo.title}</div>
+                <div className="text-xs text-gray-400">{t.boo.subtitle}</div>
               </div>
             </div>
 
-            {/* Victim list — room mode only */}
+            {/* Victim list */}
             {isRoomMode && (
               <div>
-                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Selecione a vítima</div>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t.boo.selectVictim}</div>
                 <div className="flex flex-col gap-2">
                   {others.map(p => (
                     <button key={p.playerId} onClick={() => setSelectedId(p.playerId)}
@@ -61,12 +65,29 @@ export function BooModal({ roomPlayers, myPlayerId, multiplier, onConfirm, onClo
                           className="w-8 h-8 rounded-full object-contain bg-gray-900"
                         />
                       </div>
-                      <span className="text-sm font-semibold text-white">{p.name}</span>
+                      <span className="text-sm font-semibold text-white">{playerDisplayName(p)}</span>
                       {selectedId === p.playerId && (
                         <span className="ml-auto text-xs font-bold" style={{ color: p.characterColor }}>✓</span>
                       )}
                     </button>
                   ))}
+
+                  {/* COM option */}
+                  <button onClick={() => setSelectedId(COM_ID)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border-2 transition-all active:scale-[0.98]"
+                    style={{
+                      borderColor: selectedId === COM_ID ? '#6b7280' : 'transparent',
+                      backgroundColor: selectedId === COM_ID ? '#6b728022' : '#374151',
+                    }}>
+                    <div className="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-lg shrink-0">🤖</div>
+                    <div className="flex-1 text-left">
+                      <span className="text-sm font-semibold text-gray-300">{t.boo.com}</span>
+                      <div className="text-xs text-gray-500">{t.boo.comSubtitle}</div>
+                    </div>
+                    {selectedId === COM_ID && (
+                      <span className="ml-auto text-xs font-bold text-gray-400">✓</span>
+                    )}
+                  </button>
                 </div>
               </div>
             )}
@@ -75,27 +96,27 @@ export function BooModal({ roomPlayers, myPlayerId, multiplier, onConfirm, onClo
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => onConfirm('star', victimId, victimName)}
-                disabled={isRoomMode && !selected}
+                disabled={isRoomMode && !selectedId}
                 className="py-4 rounded-2xl border-2 border-yellow-500/50 bg-yellow-900/20 active:scale-95 transition-transform disabled:opacity-40 space-y-0.5">
                 <div className="text-xl">⭐</div>
-                <div className="text-xs font-bold text-yellow-400">Roubou Estrela</div>
-                <div className="text-xs text-gray-400">você +1⭐</div>
-                <div className="text-xs text-gray-400">vítima −1⭐ +{starDrinks}🍺</div>
+                <div className="text-xs font-bold text-yellow-400">{t.boo.stealStar}</div>
+                <div className="text-xs text-gray-400">{t.boo.stealStarYou}</div>
+                <div className="text-xs text-gray-400">{t.boo.stealStarVictim(starDrinks)}</div>
               </button>
               <button
                 onClick={() => onConfirm('coin', victimId, victimName)}
-                disabled={isRoomMode && !selected}
+                disabled={isRoomMode && !selectedId}
                 className="py-4 rounded-2xl border-2 border-orange-500/50 bg-orange-900/20 active:scale-95 transition-transform disabled:opacity-40 space-y-0.5">
                 <div className="text-xl">🪙</div>
-                <div className="text-xs font-bold text-orange-400">Roubou Dinheiro</div>
-                <div className="text-xs text-gray-400">sem mudança de ⭐</div>
-                <div className="text-xs text-gray-400">vítima bebe +{coinDrinks}🍺</div>
+                <div className="text-xs font-bold text-orange-400">{t.boo.stealCoin}</div>
+                <div className="text-xs text-gray-400">{t.boo.stealCoinNote}</div>
+                <div className="text-xs text-gray-400">{t.boo.stealCoinVictim(coinDrinks)}</div>
               </button>
             </div>
 
             <button onClick={onClose}
               className="w-full py-2.5 rounded-2xl text-sm font-semibold text-gray-400 bg-gray-700 active:scale-95 transition-transform">
-              Cancelar
+              {t.common.cancel}
             </button>
           </div>
         </div>

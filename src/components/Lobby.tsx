@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
-import { resolvePortrait } from '../lib/characterLookup';
+import { resolvePortrait, playerDisplayName } from '../lib/characterLookup';
+import { t } from '../lib/labels';
 
 interface Props {
   roomCode: string;
@@ -21,7 +22,7 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
     <div className="min-h-dvh bg-gray-900 flex flex-col px-4">
       <div className="pt-8 pb-2 flex items-center justify-between">
         <div>
-          <div className="text-xs text-gray-400 mb-1">Código da sala</div>
+          <div className="text-xs text-gray-400 mb-1">{t.lobby.roomCode}</div>
           <div className="text-4xl font-black text-white tracking-widest">{roomCode}</div>
         </div>
         <div className="flex items-center gap-2">
@@ -31,7 +32,7 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
             📱
           </button>
           <button onClick={onLeave} className="text-sm text-gray-500 px-3 py-2 rounded-xl border border-gray-700">
-            Sair
+            {t.lobby.leave}
           </button>
         </div>
       </div>
@@ -42,7 +43,7 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
           <div className="fixed inset-0 z-40 bg-black/80" onClick={() => setShowQR(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
             <div className="bg-gray-800 rounded-3xl p-6 flex flex-col items-center gap-4 shadow-2xl border border-gray-700 max-w-xs w-full">
-              <div className="text-base font-bold text-white">Entrar na sala</div>
+              <div className="text-base font-bold text-white">{t.lobby.qrTitle}</div>
               <div className="bg-white p-3 rounded-2xl">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(joinUrl)}&size=180x180&margin=0`}
@@ -56,7 +57,7 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
               </div>
               <button onClick={() => setShowQR(false)}
                 className="w-full py-3 rounded-2xl text-sm font-semibold text-gray-400 bg-gray-700 active:scale-95 transition-transform">
-                Fechar
+                {t.common.close}
               </button>
             </div>
           </div>
@@ -64,12 +65,12 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
       )}
 
       <div className="text-xs text-gray-500 mb-6">
-        {isHost ? 'Você é o host — aguarde os jogadores e inicie a partida.' : 'Aguardando o host iniciar...'}
+        {isHost ? t.lobby.hostInstruction : t.lobby.guestWaiting}
       </div>
 
       <div className="flex-1">
         <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-          Jogadores ({players.length})
+          {t.lobby.players(players.length)}
         </div>
         <div className="flex flex-col gap-2">
           {players.map(p => {
@@ -90,12 +91,12 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold text-white">
-                    {p.name || <span className="text-gray-500 italic">escolhendo personagem...</span>}
+                    {p.characterId ? playerDisplayName(p) : <span className="text-gray-500 italic">{t.lobby.choosingCharacter}</span>}
                   </div>
-                  {p.isHost && <div className="text-xs text-yellow-400">Host</div>}
+                  {p.isHost && <div className="text-xs text-yellow-400">{t.common.host}</div>}
                 </div>
                 {p.playerId === playerId && (
-                  <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">você</span>
+                  <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded-full">{t.common.you}</span>
                 )}
               </div>
             );
@@ -108,7 +109,7 @@ export function Lobby({ roomCode, players, isHost, playerId, onStart, onLeave }:
           <button onClick={onStart} disabled={!canStart}
             className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform disabled:opacity-40"
             style={{ backgroundColor: 'var(--accent)' }}>
-            {canStart ? '🎮 Começar Partida' : 'Aguardando jogadores escolherem personagem...'}
+            {canStart ? t.lobby.startGame : t.lobby.waitingCharacters}
           </button>
         </div>
       )}

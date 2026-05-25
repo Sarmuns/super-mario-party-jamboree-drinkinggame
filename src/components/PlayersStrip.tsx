@@ -1,6 +1,7 @@
 import type { RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
-import { resolvePortrait } from '../lib/characterLookup';
+import { resolvePortrait, playerDisplayName } from '../lib/characterLookup';
+import { t } from '../lib/labels';
 
 interface Props {
   players: RoomPlayer[];
@@ -27,12 +28,12 @@ export function PlayersStrip({ players, myPlayerId }: Props) {
             </div>
             <div className="min-w-0">
               <div className="text-xs font-semibold text-white truncate max-w-[60px] leading-none mb-0.5">
-                {p.name}
+                {playerDisplayName(p)}
               </div>
               <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
                 <span>🍺<span className="font-bold text-white ml-0.5">{p.totalDrinks}</span></span>
                 <span>⭐<span className="font-bold text-white ml-0.5">{p.stars}</span></span>
-                {p.hasShield && <span title="Tem escudo">🛡️</span>}
+                {p.hasShield && <span title={t.playersStrip.shieldTitle}>🛡️</span>}
               </div>
             </div>
           </div>

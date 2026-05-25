@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GameTracker } from '../../components/GameTracker';
 import { useSalaContext } from './SalaLayout';
+import { playerDisplayName } from '../../lib/characterLookup';
 
 export function RoomGamePage() {
   const { code } = useParams<{ code: string }>();
@@ -45,10 +46,14 @@ export function RoomGamePage() {
 
   if (!game.state.character) return null;
 
+  const myDisplayName = room.myPlayer
+    ? playerDisplayName(room.myPlayer)
+    : game.state.character.name;
+
   function handleLog(emoji: string, msg: string) {
     log.addEntry({
       emoji, message: msg,
-      playerName: game.state.character!.name,
+      playerName: myDisplayName,
       playerColor: game.state.character!.color,
       source: 'self',
     });
@@ -78,6 +83,7 @@ export function RoomGamePage() {
       roomCode={room.roomCode ?? undefined}
       roomPlayerId={room.playerId}
       isHost={room.isHost}
+      displayName={myDisplayName}
       onDrink={game.addDrinks}
       onSetDrinks={game.setTotalDrinks}
       onActivateShield={game.activateShield}

@@ -1,17 +1,14 @@
 import { useState } from 'react';
+import { t } from '../lib/labels';
 
-const FORMATS = [
-  { id: 'ffa',  label: 'FFA',  description: 'Último lugar bebe +1' },
-  { id: '2v2',  label: '2v2',  description: 'Dupla perdedora bebe +1 cada' },
-  { id: '1v3',  label: '1v3',  description: 'Lado perdedor bebe +1 cada' },
-];
+const FORMATS = t.minigame.formats;
 
 // ── Host: 2 fases — format → result ──
 interface HostProps {
   mode: 'host';
   turn: number;
   multiplier: number;
-  onStartMinigame: (format: string) => void; // broadcast format to guests
+  onStartMinigame: (format: string) => void;
   onConfirm: (drinks: number, format: string) => void;
   onClose: () => void;
 }
@@ -34,7 +31,6 @@ type Props = HostProps | GuestProps;
 export function MinigameModal(props: Props) {
   const [format, setFormat] = useState('ffa');
   const [result, setResult] = useState<'won' | 'lost' | null>(null);
-  // host: 'format' | 'result'
   const [hostStep, setHostStep] = useState<'format' | 'result'>('format');
 
   const { turn, multiplier } = props;
@@ -46,17 +42,17 @@ export function MinigameModal(props: Props) {
   if (props.mode === 'host') {
     if (hostStep === 'format') {
       return (
-        <ModalShell title="🎮 Fim do Turno" subtitle={`Turno ${turn}`} onClose={props.onClose}>
+        <ModalShell title={t.minigame.hostTitle} subtitle={t.minigame.hostSubtitle(turn)} onClose={props.onClose}>
           <div className="rounded-2xl bg-gray-700/60 px-4 py-3 flex items-center gap-3">
             <span className="text-xl">🍺</span>
             <div>
-              <div className="text-sm font-semibold text-white">Pré-minigame notificado</div>
-              <div className="text-xs text-gray-400">Os outros já receberam para beber {preDrink} gole{preDrink !== 1 ? 's' : ''}</div>
+              <div className="text-sm font-semibold text-white">{t.minigame.prebrewNotified}</div>
+              <div className="text-xs text-gray-400">{t.minigame.prebrewNote(preDrink)}</div>
             </div>
           </div>
 
           <div>
-            <div className="text-xs text-gray-400 mb-2 uppercase tracking-wide font-semibold">Formato</div>
+            <div className="text-xs text-gray-400 mb-2 uppercase tracking-wide font-semibold">{t.minigame.formatLabel}</div>
             <div className="flex gap-2">
               {FORMATS.map(f => (
                 <button key={f.id} onClick={() => setFormat(f.id)}
@@ -74,7 +70,7 @@ export function MinigameModal(props: Props) {
           <button onClick={() => { props.onStartMinigame(format); setHostStep('result'); }}
             className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
             style={{ backgroundColor: 'var(--accent)' }}>
-            Iniciar Minigame →
+            {t.minigame.startMinigame}
           </button>
         </ModalShell>
       );
@@ -82,16 +78,16 @@ export function MinigameModal(props: Props) {
 
     // hostStep === 'result'
     return (
-      <ModalShell title="🎮 Resultado" subtitle={`${selectedFormat.label} — ${selectedFormat.description}`} onClose={props.onClose}>
+      <ModalShell title={t.minigame.resultTitle} subtitle={`${selectedFormat.label} — ${selectedFormat.description}`} onClose={props.onClose}>
         <ResultSelector
           result={result} setResult={setResult}
           preDrink={preDrink} loserDrink={loserDrink}
         />
         {result && (
-          <button onClick={() => props.onConfirm(preDrink + (result === 'lost' ? loserDrink : 0), format)}
+          <button onClick={() => props.onConfirm(result === 'lost' ? loserDrink : 0, format)}
             className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
             style={{ backgroundColor: 'var(--accent)' }}>
-            Confirmar ({preDrink + (result === 'lost' ? loserDrink : 0)} gole{(preDrink + (result === 'lost' ? loserDrink : 0)) !== 1 ? 's' : ''})
+            {result === 'lost' ? t.minigame.confirmLoss(loserDrink) : t.minigame.confirmWin}
           </button>
         )}
       </ModalShell>
@@ -104,14 +100,14 @@ export function MinigameModal(props: Props) {
 
   if (phase === 'prebrew') {
     return (
-      <ModalShell title="🍺 Pré-minigame!" subtitle={`${hostName} encerrou o Turno ${turn}`} onClose={undefined}>
+      <ModalShell title={t.minigame.guestPrebrewTitle} subtitle={t.minigame.guestPrebrewSubtitle(hostName, turn)} onClose={undefined}>
         <div className="text-center py-4">
           <div className="text-6xl font-black text-white mb-2">{preDrink}</div>
-          <div className="text-gray-400 text-sm">gole{preDrink !== 1 ? 's' : ''} antes de começar</div>
+          <div className="text-gray-400 text-sm">{t.minigame.drinksBefore(preDrink)}</div>
         </div>
         <button onClick={() => (props as GuestProps).onConfirmPrebrew(preDrink)}
           className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform bg-yellow-600">
-          Bebi! ✓ — Aguardar formato
+          {t.minigame.drinkConfirm}
         </button>
       </ModalShell>
     );
@@ -119,10 +115,10 @@ export function MinigameModal(props: Props) {
 
   if (phase === 'waiting') {
     return (
-      <ModalShell title="⏳ Aguardando..." subtitle="Host está selecionando o formato" onClose={undefined}>
+      <ModalShell title={t.minigame.waitingTitle} subtitle={t.minigame.waitingSubtitle} onClose={undefined}>
         <div className="text-center py-8 text-gray-500">
           <div className="text-4xl mb-3 animate-pulse">🎮</div>
-          <div className="text-sm">{hostName} está escolhendo o formato do minigame...</div>
+          <div className="text-sm">{t.minigame.waitingBody(hostName)}</div>
         </div>
       </ModalShell>
     );
@@ -130,7 +126,7 @@ export function MinigameModal(props: Props) {
 
   // phase === 'result'
   return (
-    <ModalShell title="🎮 Resultado" subtitle={`${guestSelectedFormat.label} — ${guestSelectedFormat.description}`} onClose={undefined}>
+    <ModalShell title={t.minigame.resultTitle} subtitle={`${guestSelectedFormat.label} — ${guestSelectedFormat.description}`} onClose={undefined}>
       <ResultSelector
         result={result} setResult={setResult}
         preDrink={0} loserDrink={loserDrink}
@@ -140,7 +136,7 @@ export function MinigameModal(props: Props) {
         <button onClick={() => (props as GuestProps).onConfirmResult(result === 'lost' ? loserDrink : 0)}
           className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
           style={{ backgroundColor: 'var(--accent)' }}>
-          Confirmar {result === 'lost' ? `(+${loserDrink} gole${loserDrink !== 1 ? 's' : ''})` : '(nada a beber)'}
+          {result === 'lost' ? t.minigame.confirmLoss(loserDrink) : t.minigame.confirmWin}
         </button>
       )}
     </ModalShell>
@@ -188,7 +184,7 @@ function ResultSelector({ result, setResult, preDrink, loserDrink, hidePreDrink 
     <div className="space-y-3">
       {!hidePreDrink && preDrink > 0 && (
         <div className="rounded-2xl bg-gray-700/60 px-4 py-2 text-xs text-gray-400">
-          🍺 {preDrink} gole{preDrink !== 1 ? 's' : ''} pré-minigame já contabilizados
+          {t.minigame.prebrewCounted(preDrink)}
         </div>
       )}
       <div className="grid grid-cols-2 gap-3">
@@ -197,14 +193,14 @@ function ResultSelector({ result, setResult, preDrink, loserDrink, hidePreDrink 
           style={result === 'won'
             ? { backgroundColor: '#166534', borderColor: '#22c55e', color: '#86efac' }
             : { backgroundColor: '#1f2937', borderColor: '#374151', color: '#9ca3af' }}>
-          🏆 Ganhei
+          {t.common.won}
         </button>
         <button onClick={() => setResult('lost')}
           className="py-4 rounded-2xl text-sm font-bold border-2 transition-all active:scale-95"
           style={result === 'lost'
             ? { backgroundColor: '#7f1d1d', borderColor: '#ef4444', color: '#fca5a5' }
             : { backgroundColor: '#1f2937', borderColor: '#374151', color: '#9ca3af' }}>
-          😅 Perdi +{loserDrink}
+          {t.minigame.lost} +{loserDrink}
         </button>
       </div>
     </div>

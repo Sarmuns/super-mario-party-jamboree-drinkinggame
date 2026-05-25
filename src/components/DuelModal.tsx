@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
+import { playerDisplayName } from '../lib/characterLookup';
+import { t } from '../lib/labels';
 
 type Phase = 'select' | 'result';
 
@@ -20,7 +22,6 @@ export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, on
   const others = (roomPlayers ?? []).filter(p => p.playerId !== myPlayerId && p.characterId);
   const hasPeers = others.length > 0;
 
-  // Start at 'select' if there are real players to choose; jump straight to 'result' if offline
   const [phase, setPhase] = useState<Phase>(hasPeers ? 'select' : 'result');
   const [selectedId, setSelectedId] = useState<string | null>(hasPeers ? null : CPU_ID);
   const [selectedName, setSelectedName] = useState<string>(hasPeers ? '' : 'oponente');
@@ -30,7 +31,7 @@ export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, on
 
   const cpuOption: Pick<RoomPlayer, 'playerId' | 'name' | 'characterColor' | 'characterIcon'> = {
     playerId: CPU_ID,
-    name: 'CPU / Outro',
+    name: t.duel.cpu,
     characterColor: '#6b7280',
     characterIcon: '',
   };
@@ -63,30 +64,30 @@ export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, on
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl bg-gray-700 shrink-0">⚔️</div>
                   <div>
-                    <div className="text-base font-bold text-white">Duelo!</div>
-                    <div className="text-xs text-gray-400">Ambos bebem {preDrink} antes. Perdedor bebe +{loserDrinks}</div>
+                    <div className="text-base font-bold text-white">{t.duel.title}</div>
+                    <div className="text-xs text-gray-400">{t.duel.subtitle(preDrink, loserDrinks)}</div>
                   </div>
                 </div>
 
                 <div className="rounded-2xl bg-gray-700/50 p-3 space-y-1.5">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Pré-duelo (ambos)</span>
+                    <span className="text-gray-400">{t.duel.preDuel}</span>
                     <span className="text-white font-bold">{preDrink} 🍺</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Perdedor bebe</span>
+                    <span className="text-gray-400">{t.duel.loserDrinks}</span>
                     <span className="text-red-400 font-bold">+{loserDrinks} 🍺</span>
                   </div>
                   {multiplier > 1 && (
-                    <div className="text-xs text-red-400 text-right">multiplicador {multiplier}x ativo</div>
+                    <div className="text-xs text-red-400 text-right">{t.duel.multiplierNote(multiplier)}</div>
                   )}
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Selecione o oponente</div>
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{t.duel.selectOpponent}</div>
                   <div className="flex flex-col gap-2">
                     {others.map(p => (
-                      <button key={p.playerId} onClick={() => selectPlayer(p.playerId, p.name)}
+                      <button key={p.playerId} onClick={() => selectPlayer(p.playerId, playerDisplayName(p))}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border-2 transition-all active:scale-[0.98]"
                         style={{
                           borderColor: selectedId === p.playerId ? p.characterColor : 'transparent',
@@ -99,7 +100,7 @@ export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, on
                             className="w-8 h-8 rounded-full object-contain bg-gray-900"
                           />
                         </div>
-                        <span className="text-sm font-semibold text-white">{p.name}</span>
+                        <span className="text-sm font-semibold text-white">{playerDisplayName(p)}</span>
                         {selectedId === p.playerId && (
                           <span className="ml-auto text-xs font-bold" style={{ color: p.characterColor }}>✓</span>
                         )}
@@ -124,14 +125,14 @@ export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, on
                 <div className="flex gap-3">
                   <button onClick={onClose}
                     className="flex-1 py-3 rounded-2xl text-sm font-semibold text-gray-400 bg-gray-700 active:scale-95 transition-transform">
-                    Cancelar
+                    {t.common.cancel}
                   </button>
                   <button
                     onClick={handleChallenge}
                     disabled={!selectedId}
                     className="flex-1 py-3 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform disabled:opacity-40"
                     style={{ backgroundColor: 'var(--accent)' }}>
-                    ⚔️ Desafiar — {preDrink}🍺
+                    {t.duel.challenge(preDrink)}
                   </button>
                 </div>
               </>
@@ -140,30 +141,30 @@ export function DuelModal({ roomPlayers, myPlayerId, multiplier, onChallenge, on
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl bg-gray-700 shrink-0">⚔️</div>
                   <div>
-                    <div className="text-base font-bold text-white">Resultado do Duelo</div>
-                    <div className="text-xs text-gray-400">vs {selectedName}</div>
+                    <div className="text-base font-bold text-white">{t.duel.resultTitle}</div>
+                    <div className="text-xs text-gray-400">{t.duel.vs(selectedName)}</div>
                   </div>
                 </div>
 
                 <div className="rounded-2xl bg-gray-700/50 p-3 text-sm text-gray-400 text-center">
-                  Perdedor bebe <span className="text-red-400 font-bold">+{loserDrinks} goles</span>
-                  {multiplier > 1 && <span className="text-red-400"> ({multiplier}x)</span>}
+                  {t.duel.loserDrinksResult(loserDrinks)}
+                  {multiplier > 1 && <span className="text-red-400"> {t.duel.multiplierResult(multiplier)}</span>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => onResult(false, selectedId ?? '', selectedName)}
                     className="py-4 rounded-2xl text-sm font-bold border-2 border-green-500/50 bg-green-900/20 text-green-400 active:scale-95 transition-transform">
-                    🏆 Ganhei
+                    {t.common.won}
                   </button>
                   <button onClick={() => onResult(true, selectedId ?? '', selectedName)}
                     className="py-4 rounded-2xl text-sm font-bold border-2 border-red-500/50 bg-red-900/20 text-red-400 active:scale-95 transition-transform">
-                    😅 Perdi +{loserDrinks}🍺
+                    {t.common.lost(loserDrinks)}
                   </button>
                 </div>
 
                 <button onClick={() => onCancelAfterChallenge(selectedId ?? '', selectedName)}
                   className="w-full py-2.5 rounded-2xl text-xs font-semibold text-gray-500 bg-gray-700/60 active:scale-95 transition-transform">
-                  Cancelar duelo
+                  {t.duel.cancelDuel}
                 </button>
               </>
             )}

@@ -1,3 +1,5 @@
+import { t } from '../lib/labels';
+
 interface Props {
   onOffline: () => void;
   onSala: () => void;
@@ -7,8 +9,8 @@ export function ModeSelector({ onOffline, onSala }: Props) {
   return (
     <div className="min-h-dvh bg-gray-900 flex flex-col items-center justify-center px-6 gap-8">
       <div className="text-center">
-        <div className="text-4xl font-black text-white mb-2">Mario Party</div>
-        <div className="text-xl text-yellow-400 font-bold">Drinking Game 🍺</div>
+        <div className="text-4xl font-black text-white mb-2">{t.modeSelector.title}</div>
+        <div className="text-xl text-yellow-400 font-bold">{t.modeSelector.subtitle}</div>
       </div>
 
       <div className="flex flex-col gap-4 w-full max-w-sm">
@@ -17,8 +19,8 @@ export function ModeSelector({ onOffline, onSala }: Props) {
           className="w-full py-5 rounded-2xl bg-gray-800 border-2 border-gray-700 active:scale-95 transition-transform text-left px-6"
         >
           <div className="text-2xl mb-1">🎮</div>
-          <div className="text-lg font-bold text-white">Jogar Sozinho</div>
-          <div className="text-sm text-gray-400">Modo offline, sem conexão</div>
+          <div className="text-lg font-bold text-white">{t.modeSelector.offline}</div>
+          <div className="text-sm text-gray-400">{t.modeSelector.offlineNote}</div>
         </button>
 
         <button
@@ -27,8 +29,8 @@ export function ModeSelector({ onOffline, onSala }: Props) {
           style={{ backgroundColor: 'rgba(var(--accent-rgb,99,102,241)/0.15)', borderColor: 'var(--accent,#6366f1)' }}
         >
           <div className="text-2xl mb-1">🏠</div>
-          <div className="text-lg font-bold text-white">Criar / Entrar em Sala</div>
-          <div className="text-sm text-gray-400">Sincronizado com os amigos em tempo real</div>
+          <div className="text-lg font-bold text-white">{t.modeSelector.online}</div>
+          <div className="text-sm text-gray-400">{t.modeSelector.onlineNote}</div>
         </button>
       </div>
     </div>

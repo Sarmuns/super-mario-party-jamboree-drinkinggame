@@ -1,6 +1,7 @@
 import type { RoomPlayer } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
-import { resolvePortrait } from '../lib/characterLookup';
+import { resolvePortrait, playerDisplayName } from '../lib/characterLookup';
+import { t } from '../lib/labels';
 
 interface Props {
   players: RoomPlayer[];
@@ -26,8 +27,8 @@ export function PlayersOverlay({ players, playerId, roomCode, onClose }: Props) 
           <div className="px-5 pt-2 pb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <div className="text-base font-bold text-white">Jogadores</div>
-                <div className="text-xs text-gray-500">Sala {roomCode}</div>
+                <div className="text-base font-bold text-white">{t.playersOverlay.title}</div>
+                <div className="text-xs text-gray-500">{t.playersOverlay.room(roomCode)}</div>
               </div>
               <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-700 text-gray-400 text-lg">×</button>
             </div>
@@ -47,13 +48,13 @@ export function PlayersOverlay({ players, playerId, roomCode, onClose }: Props) 
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold text-white truncate">
-                      {p.name} {p.playerId === playerId && <span className="text-xs text-gray-400">(você)</span>}
+                      {playerDisplayName(p)} {p.playerId === playerId && <span className="text-xs text-gray-400">({t.common.you})</span>}
                     </div>
-                    <div className="text-xs text-gray-400">⭐ {p.stars} • {p.isHost ? 'Host' : 'Guest'}</div>
+                    <div className="text-xs text-gray-400">⭐ {p.stars} • {p.isHost ? t.common.host : t.common.guest}</div>
                   </div>
                   <div className="text-right shrink-0">
                     <div className="text-xl font-black" style={{ color: p.characterColor }}>{p.totalDrinks}</div>
-                    <div className="text-xs text-gray-500">goles</div>
+                    <div className="text-xs text-gray-500">{t.playersOverlay.goles}</div>
                   </div>
                 </div>
               ))}

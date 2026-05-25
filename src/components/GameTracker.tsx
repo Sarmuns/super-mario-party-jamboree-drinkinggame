@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { Character, RoomPlayer, RoomEvent } from '../types';
 import { calcMultiplier } from '../lib/multiplier';
+import { t } from '../lib/labels';
 import type { LogEntry } from '../hooks/useLog';
 import { Header } from './Header';
 import { SpacesSection } from './SpacesSection';
@@ -30,6 +31,7 @@ interface Props {
   roomCode?: string;
   roomPlayerId?: string;
   isHost?: boolean;
+  displayName?: string;
   onBroadcast?: (event: RoomEvent) => void;
   onDrink: (count: number) => void;
   onSetDrinks: (value: number) => void;
@@ -48,7 +50,7 @@ interface Props {
 export function GameTracker({
   character, totalDrinks, hasShield, isHomestretch, isJamboree,
   stars, turn, canUndo, logEntries, onClearLog,
-  roomPlayers, roomCode, roomPlayerId, isHost, onBroadcast,
+  roomPlayers, roomCode, roomPlayerId, isHost, displayName, onBroadcast,
   onDrink, onSetDrinks, onActivateShield, onUseShield, onUndo,
   onToggleHomestretch, onToggleJamboree, onAddStars, onIncrementTurn,
   onReset, onLog, showToast,
@@ -69,7 +71,7 @@ export function GameTracker({
     onBroadcast({
       type: 'activity',
       fromPlayerId: roomPlayerId ?? '',
-      fromPlayerName: character.name,
+      fromPlayerName: displayName ?? character.name,
       characterColor: character.color,
       message: msg,
       emoji,
@@ -85,25 +87,25 @@ export function GameTracker({
 
   function handleRoll1() {
     if (hasShield) {
-      showToast('Já tem escudo! 🛡️');
+      showToast(t.gameTracker.alreadyHasShield);
     } else {
       onActivateShield();
-      showToast('Escudo ativado! 🛡️');
-      logAndBroadcast('🛡️', 'Tirou 1 no dado — escudo ativado');
+      showToast(t.gameTracker.shieldActivated);
+      logAndBroadcast('🛡️', t.gameTracker.shieldActivatedLog);
     }
   }
 
   function handleRoll10() {
     const count = 1 * multiplier;
     onDrink(count);
-    showToast(`Imposto da sorte! 🎰 +${count} gole${count !== 1 ? 's' : ''}`);
-    logAndBroadcast('🎰', `Tirou 10 no dado — pagou ${count} gole${count !== 1 ? 's' : ''}`);
+    showToast(t.gameTracker.luckyTax(count));
+    logAndBroadcast('🎰', t.gameTracker.luckyTaxLog(count));
   }
 
   function handleUseShieldFromHeader() {
     onUseShield();
-    showToast('Escudo usado! 🛡️ Comunique à mesa.');
-    logAndBroadcast('🛡️', 'Usou o escudo manualmente');
+    showToast(t.gameTracker.shieldUsed);
+    logAndBroadcast('🛡️', t.gameTracker.shieldUsedLog);
   }
 
   // Casa VS → minigame sem avançar turno
@@ -114,9 +116,9 @@ export function GameTracker({
       onBroadcast({
         type: 'minigame_prebrew',
         fromPlayerId: roomPlayerId ?? '',
-        fromPlayerName: character.name,
+        fromPlayerName: displayName ?? character.name,
         characterColor: character.color,
-        message: `${character.name} caiu na Casa VS — minigame!`,
+        message: t.gameTracker.vsMinigameMessage(displayName ?? character.name),
         drinks: 1,
         turn,
       });
@@ -131,24 +133,28 @@ export function GameTracker({
       onBroadcast({
         type: 'minigame_prebrew',
         fromPlayerId: roomPlayerId ?? '',
-        fromPlayerName: character.name,
+        fromPlayerName: displayName ?? character.name,
         characterColor: character.color,
-        message: `${character.name} encerrou o Turno ${turn} — beba antes do minigame!`,
+        message: t.gameTracker.minigameOpenMessage(displayName ?? character.name, turn),
         drinks: 1,
         turn,
       });
     }
   }
 
-  // Host selecionou formato → broadcast para guests entrarem na fase de resultado
+  // Host selecionou formato → contabiliza prebrew agora + broadcast para guests
   function handleStartMinigame(format: string) {
+    const preDrink = 1 * multiplier;
+    onDrink(preDrink);
+    showToast(t.gameTracker.prebrewToast(preDrink));
+    onLog('🍺', t.gameTracker.prebrewLog(preDrink));
     if (onBroadcast) {
       onBroadcast({
         type: 'minigame_start',
         fromPlayerId: roomPlayerId ?? '',
-        fromPlayerName: character.name,
+        fromPlayerName: displayName ?? character.name,
         characterColor: character.color,
-        message: `Formato: ${format.toUpperCase()}`,
+        message: t.gameTracker.minigameStartFormat(format),
         drinks: 1,
         turn,
         minigameFormat: format,
@@ -156,28 +162,33 @@ export function GameTracker({
     }
   }
 
-  function handleMinigameConfirm(drinks: number, format: string) {
-    onDrink(drinks);
+  function handleMinigameConfirm(penalty: number, format: string) {
+    if (penalty > 0) onDrink(penalty);
     if (!isVsMinigame) onIncrementTurn(); // VS Space não avança turno
     setShowMinigame(false);
     const label = isVsMinigame ? 'Casa VS' : `Turno ${turn}`;
-    showToast(`🎮 ${label} — minigame! 🍺 +${drinks}`);
-    logAndBroadcast('🎮', `${label} — ${format.toUpperCase()} — bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`);
+    if (penalty > 0) {
+      showToast(t.gameTracker.minigameLostToast(label, penalty));
+      logAndBroadcast('🎮', t.gameTracker.minigameLostLog(label, format, penalty));
+    } else {
+      showToast(t.gameTracker.minigameWonToast(label));
+      logAndBroadcast('🎮', t.gameTracker.minigameWonLog(label, format));
+    }
   }
 
   function handleMinigameSkip() {
     if (!isVsMinigame) onIncrementTurn();
     setShowMinigame(false);
-    showToast(isVsMinigame ? 'Minigame VS pulado' : `Turno ${turn} encerrado`);
-    onLog('🎮', isVsMinigame ? 'Casa VS — minigame pulado' : `Turno ${turn} encerrado (minigame pulado)`);
+    showToast(isVsMinigame ? t.gameTracker.minigameSkipToastVs : t.gameTracker.minigameSkipToast(turn));
+    onLog('🎮', isVsMinigame ? t.gameTracker.minigameSkipLogVs : t.gameTracker.minigameSkipLog(turn));
     // Avisa guests que o minigame foi cancelado (resolve BUG-01)
     if (onBroadcast) {
       onBroadcast({
         type: 'minigame_skip',
         fromPlayerId: roomPlayerId ?? '',
-        fromPlayerName: character.name,
+        fromPlayerName: displayName ?? character.name,
         characterColor: character.color,
-        message: 'Minigame cancelado pelo host',
+        message: t.gameTracker.minigameSkipMessage,
         drinks: 0,
       });
     }
@@ -191,22 +202,22 @@ export function GameTracker({
       onBroadcast({
         type: 'boo_steal',
         fromPlayerId: roomPlayerId ?? '',
-        fromPlayerName: character.name,
+        fromPlayerName: displayName ?? character.name,
         characterColor: character.color,
         message: booType === 'star'
-          ? `${character.name} usou o Boo em ${victimName} — roubou estrela!`
-          : `${character.name} usou o Boo em ${victimName} — roubou dinheiro!`,
+          ? t.gameTracker.booStarMessage(displayName ?? character.name, victimName)
+          : t.gameTracker.booCoinMessage(displayName ?? character.name, victimName),
         drinks,
         targetPlayerId: victimId,
         booType,
       });
     }
     if (booType === 'star') {
-      showToast(`👻 +1⭐ roubada${victimPart}!`);
-      logAndBroadcast('👻', `Usou o Boo${victimPart} — +1⭐`);
+      showToast(t.gameTracker.booStarToast(victimPart));
+      logAndBroadcast('👻', t.gameTracker.booStarLog(victimPart));
     } else {
-      showToast(`👻 Roubou dinheiro${victimPart}!`);
-      logAndBroadcast('👻', `Usou o Boo${victimPart} — roubou dinheiro`);
+      showToast(t.gameTracker.booCoinToast(victimPart));
+      logAndBroadcast('👻', t.gameTracker.booCoinLog(victimPart));
     }
     setShowBoo(false);
   }
@@ -219,16 +230,16 @@ export function GameTracker({
       onBroadcast({
         type: 'duel_challenge',
         fromPlayerId: roomPlayerId ?? '',
-        fromPlayerName: character.name,
+        fromPlayerName: displayName ?? character.name,
         characterColor: character.color,
-        message: `${character.name} te desafiou para um duelo! Beba ${preDrink} antes`,
+        message: t.gameTracker.duelChallengeMessage(displayName ?? character.name, preDrink),
         drinks: preDrink,
         targetPlayerId: opponentId,
       });
     }
-    const label = opponentName && opponentName !== 'oponente' ? `vs ${opponentName}` : '';
-    logAndBroadcast('⚔️', `Duelo${label ? ' ' + label : ''} — bebeu ${preDrink} (pré-duelo)`);
-    showToast(`⚔️ Duelo${label ? ' ' + label : ''}! Pré-duelo: +${preDrink}🍺`);
+    const label = opponentName && opponentName !== 'oponente' ? ` vs ${opponentName}` : '';
+    logAndBroadcast('⚔️', t.gameTracker.duelChallengeLog(label, preDrink));
+    showToast(t.gameTracker.duelChallengeToast(label, preDrink));
   }
 
   function handleDuelCancel(opponentId: string, opponentName: string) {
@@ -237,16 +248,16 @@ export function GameTracker({
       onBroadcast({
         type: 'duel_cancelled',
         fromPlayerId: roomPlayerId ?? '',
-        fromPlayerName: character.name,
+        fromPlayerName: displayName ?? character.name,
         characterColor: character.color,
-        message: `${character.name} cancelou o duelo`,
+        message: t.gameTracker.duelCancelledMessage(displayName ?? character.name),
         drinks: 0,
         targetPlayerId: opponentId,
       });
     }
     const label = opponentName && opponentName !== 'oponente' ? ` vs ${opponentName}` : '';
-    showToast(`⚔️ Duelo${label} cancelado`);
-    onLog('⚔️', `Duelo${label} cancelado`);
+    showToast(t.gameTracker.duelCancelToast(label));
+    onLog('⚔️', t.gameTracker.duelCancelLog(label));
     setShowDuel(false);
   }
 
@@ -256,30 +267,30 @@ export function GameTracker({
     const label = opponentName && opponentName !== 'oponente' ? ` vs ${opponentName}` : '';
     if (lost) {
       onDrink(loserDrinks);
-      showToast(`😅 Perdeu o duelo${label}! 🍺 +${loserDrinks}`);
-      logAndBroadcast('😅', `Perdeu o duelo${label} — bebeu ${loserDrinks} goles`);
+      showToast(t.gameTracker.duelLostToast(label, loserDrinks));
+      logAndBroadcast('😅', t.gameTracker.duelLostLog(label, loserDrinks));
     } else {
       if (!isCpu && onBroadcast) {
         onBroadcast({
           type: 'duel_result',
           fromPlayerId: roomPlayerId ?? '',
-          fromPlayerName: character.name,
+          fromPlayerName: displayName ?? character.name,
           characterColor: character.color,
-          message: `${character.name} ganhou o duelo!`,
+          message: t.gameTracker.duelWonMessage(displayName ?? character.name),
           drinks: loserDrinks,
           targetPlayerId: opponentId,
         });
       }
-      showToast(`🏆 Ganhou o duelo${label}!`);
-      logAndBroadcast('🏆', `Ganhou o duelo${label}`);
+      showToast(t.gameTracker.duelWonToast(label));
+      logAndBroadcast('🏆', t.gameTracker.duelWonLog(label));
     }
     setShowDuel(false);
   }
 
   function handleAddOne() {
     onDrink(1);
-    showToast('🍺 +1');
-    logAndBroadcast('🍺', 'Bebeu 1 gole avulso');
+    showToast(t.gameTracker.addOneToast);
+    logAndBroadcast('🍺', t.gameTracker.addOneLog);
   }
 
   return (
@@ -290,12 +301,12 @@ export function GameTracker({
         roomPlayerCount={roomPlayers?.length}
         onUseShield={handleUseShieldFromHeader} onToggleHomestretch={onToggleHomestretch}
         onToggleJamboree={onToggleJamboree} onReset={onReset}
-        onUndo={() => { onUndo(); onLog('↩', 'Desfez a última ação'); }}
+        onUndo={() => { onUndo(); onLog('↩', t.gameTracker.undoLog); }}
         onAddOne={handleAddOne}
         onSetDrinks={(v) => {
           onSetDrinks(v);
-          showToast(`✏️ Goles ajustados para ${v}`);
-          logAndBroadcast('✏️', `Ajustou goles manualmente para ${v}`);
+          showToast(t.gameTracker.drinkAdjustedToast(v));
+          logAndBroadcast('✏️', t.gameTracker.drinkAdjustedLog(v));
         }}
         onShowPlayers={isRoomMode ? () => setShowPlayers(true) : undefined}
       />
@@ -312,7 +323,7 @@ export function GameTracker({
           style={activeTab === 'game'
             ? { color: 'var(--accent)', borderBottom: '2px solid var(--accent)' }
             : { color: '#6b7280' }}>
-          🎮 Jogo
+          {t.gameTracker.tabGame}
         </button>
         <button
           onClick={() => setActiveTab('log')}
@@ -320,7 +331,7 @@ export function GameTracker({
           style={activeTab === 'log'
             ? { color: 'var(--accent)', borderBottom: '2px solid var(--accent)' }
             : { color: '#6b7280' }}>
-          📋 Log
+          {t.gameTracker.tabLog}
           {activeTab === 'game' && logEntries.length > 0 && (
             <span className="absolute top-1.5 right-6 w-2 h-2 rounded-full bg-red-500" />
           )}
@@ -357,18 +368,18 @@ export function GameTracker({
                 <button onClick={isRoomMode ? handleMinigameOpen : () => setShowMinigame(true)}
                   className="w-full py-4 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform"
                   style={{ backgroundColor: 'var(--accent)', opacity: 0.9 }}>
-                  🎮 Fim do Turno {turn}
+                  {t.gameTracker.endTurn(turn)}
                 </button>
               )}
               {isRoomMode && !isHost && (
                 <div className="text-center text-xs text-gray-600 py-2">
-                  Aguardando o host encerrar o turno...
+                  {t.gameTracker.waitingHost}
                 </div>
               )}
 
               <button onClick={() => setShowEndGame(true)}
                 className="w-full py-3 rounded-2xl text-sm font-bold text-gray-400 border border-gray-700 bg-gray-800/60 active:scale-95 transition-transform">
-                🏁 Fim de Partida
+                {t.gameTracker.endGame}
               </button>
             </div>
           </div>

@@ -11,6 +11,7 @@ export interface LogEntry {
 }
 
 const LOG_KEY = 'smpj-game-log';
+const LOG_ROOM_KEY = 'smpj-log-room';
 const MAX_ENTRIES = 200;
 
 function loadLog(): LogEntry[] {
@@ -44,5 +45,15 @@ export function useLog() {
     localStorage.removeItem(LOG_KEY);
   }, []);
 
-  return { entries, addEntry, clearLog };
+  // Call when entering a room — clears the log if the room code changed since last session.
+  const setActiveRoom = useCallback((code: string) => {
+    const stored = localStorage.getItem(LOG_ROOM_KEY);
+    if (stored !== code) {
+      setEntries([]);
+      localStorage.removeItem(LOG_KEY);
+      localStorage.setItem(LOG_ROOM_KEY, code);
+    }
+  }, []);
+
+  return { entries, addEntry, clearLog, setActiveRoom };
 }

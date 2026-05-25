@@ -5,6 +5,7 @@ import { useRoom } from '../../hooks/useRoom';
 import { useLog } from '../../hooks/useLog';
 import { IncomingEventModal } from '../../components/IncomingEventModal';
 import { calcMultiplier } from '../../lib/multiplier';
+import { t } from '../../lib/labels';
 import type { RootContext } from '../Root';
 
 // Estados separados para empilhamento simultâneo
@@ -21,11 +22,6 @@ export interface SalaContext extends RootContext {
   setNickname: (n: string) => void;
 }
 
-const FORMATS: Record<string, string> = {
-  ffa: 'FFA — último lugar bebe +1',
-  '2v2': '2v2 — dupla perdedora bebe +1 cada',
-  '1v3': '1v3 — lado perdedor bebe +1 cada',
-};
 
 export function SalaLayout() {
   const root = useOutletContext<RootContext>();
@@ -43,6 +39,11 @@ export function SalaLayout() {
     setNicknameState(n);
     localStorage.setItem('smpj-nickname', n);
   }
+
+  // Clear log when entering a different room than the last session
+  useEffect(() => {
+    if (room.roomCode) log.setActiveRoom(room.roomCode);
+  }, [room.roomCode]);
 
   // Accent color
   useEffect(() => {
@@ -120,12 +121,12 @@ export function SalaLayout() {
       game.addDrinks(drinks);
       if (isStar) game.addStars(-1);
       const starNote = isStar ? ' -1⭐' : '';
-      root.showToast(`👻 ${incomingEvent.fromPlayerName} usou o Boo!${starNote} +${drinks}🍺`);
+      root.showToast(t.salaLayout.booToast(incomingEvent.fromPlayerName, drinks, isStar));
       log.addEntry({
         emoji: '👻',
         message: isStar
-          ? `Boo de ${incomingEvent.fromPlayerName} — perdeu ⭐ e bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`
-          : `Boo de ${incomingEvent.fromPlayerName} — perdeu dinheiro e bebeu ${drinks} gole${drinks !== 1 ? 's' : ''}`,
+          ? t.salaLayout.booLogStar(incomingEvent.fromPlayerName, drinks)
+          : t.salaLayout.booLogCoin(incomingEvent.fromPlayerName, drinks),
         playerName: game.state.character?.name ?? 'Você',
         playerColor: game.state.character?.color ?? '#6366f1',
         source: 'room',
@@ -161,7 +162,7 @@ export function SalaLayout() {
       }
       setDuelPrebrewPending(null);
       setDuelResultPending(null);
-      root.showToast(`⚔️ ${incomingEvent.fromPlayerName} cancelou o duelo`);
+      root.showToast(t.salaLayout.duelCancelled(incomingEvent.fromPlayerName));
       room.dismissEvent();
       return;
     }
@@ -181,7 +182,7 @@ export function SalaLayout() {
       if (incomingEvent.type === 'minigame_skip') {
         setPrebrewPending(null);
         setResultPending(null);
-        root.showToast('Host cancelou o minigame');
+        root.showToast(t.salaLayout.minigameSkipped);
         room.dismissEvent();
         return;
       }
@@ -221,12 +222,12 @@ export function SalaLayout() {
           multiplier={multiplier}
           onDrink={(count) => {
             game.addDrinks(count);
-            log.addEntry({ emoji: '🍺', message: `${incomingEvent!.message} — bebeu ${count} gole${count !== 1 ? 's' : ''}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
+            log.addEntry({ emoji: '🍺', message: t.salaLayout.incomingDrinkLog(incomingEvent!.message, count), playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
           }}
           onUseShield={() => {
             game.useShield();
-            root.showToast('Escudo usado! 🛡️');
-            log.addEntry({ emoji: '🛡️', message: `Escudo usado — ${incomingEvent!.message}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
+            root.showToast(t.salaLayout.shieldUsed);
+            log.addEntry({ emoji: '🛡️', message: t.salaLayout.incomingShieldLog(incomingEvent!.message), playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
           }}
           onDismiss={room.dismissEvent}
         />
@@ -252,11 +253,11 @@ export function SalaLayout() {
                   onConfirm={(lost) => {
                     if (lost) {
                       game.addDrinks(loserDrinks);
-                      root.showToast(`😅 Perdeu! 🍺 +${loserDrinks}`);
-                      log.addEntry({ emoji: '😅', message: `Minigame — perdeu, bebeu ${loserDrinks} gole${loserDrinks !== 1 ? 's' : ''}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
+                      root.showToast(t.salaLayout.minigameLostToast(loserDrinks));
+                      log.addEntry({ emoji: '😅', message: t.salaLayout.minigameLostLog(loserDrinks), playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
                     } else {
-                      root.showToast('🏆 Ganhou o minigame!');
-                      log.addEntry({ emoji: '🏆', message: 'Minigame — ganhou!', playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
+                      root.showToast(t.salaLayout.minigameWonToast);
+                      log.addEntry({ emoji: '🏆', message: t.salaLayout.minigameWonLog, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
                     }
                     setResultPending(null);
                   }}
@@ -276,8 +277,8 @@ export function SalaLayout() {
                   multiplier={multiplier}
                   onConfirm={() => {
                     game.addDrinks(prebrewDrinks);
-                    root.showToast(`🍺 +${prebrewDrinks} (pré-minigame)`);
-                    log.addEntry({ emoji: '🍺', message: `Pré-minigame — bebeu ${prebrewDrinks} gole${prebrewDrinks !== 1 ? 's' : ''}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
+                    root.showToast(t.salaLayout.prebrewToast(prebrewDrinks));
+                    log.addEntry({ emoji: '🍺', message: t.salaLayout.prebrewLog(prebrewDrinks), playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'self' });
                     setPrebrewPending(null);
                   }}
                 />
@@ -301,19 +302,19 @@ export function SalaLayout() {
               {duelResultPending && (
                 <div className="px-5 py-4 space-y-3">
                   <div>
-                    <div className="text-xs text-gray-400">⚔️ Duelo — resultado</div>
-                    <div className="text-sm font-bold text-white mt-0.5">{duelResultPending.challengerName} ganhou o duelo</div>
+                    <div className="text-xs text-gray-400">{t.salaLayout.duelResultTitle}</div>
+                    <div className="text-sm font-bold text-white mt-0.5">{t.salaLayout.duelWon(duelResultPending.challengerName)}</div>
                   </div>
                   <button
                     onClick={() => {
                       const d = duelResultPending.drinks;
                       game.addDrinks(d);
-                      root.showToast(`😅 Perdeu o duelo! 🍺 +${d}`);
-                      log.addEntry({ emoji: '😅', message: `Perdeu o duelo com ${duelResultPending.challengerName} — bebeu ${d} gole${d !== 1 ? 's' : ''}`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'room' });
+                      root.showToast(t.salaLayout.duelLostToast(d));
+                      log.addEntry({ emoji: '😅', message: t.salaLayout.duelLostLog(duelResultPending.challengerName, d), playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'room' });
                       setDuelResultPending(null);
                     }}
                     className="w-full py-3 rounded-2xl text-sm font-bold border-2 border-red-500/50 bg-red-900/20 text-red-400 active:scale-95 transition-transform">
-                    😅 Perdi — beber +{duelResultPending.drinks}🍺
+                    {t.salaLayout.duelLostButton(duelResultPending.drinks)}
                   </button>
                 </div>
               )}
@@ -330,20 +331,20 @@ export function SalaLayout() {
                     <div className="text-[10px] text-gray-400">gole{duelPrebrewPending.drinks !== 1 ? 's' : ''}</div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs text-gray-400 leading-none">{duelPrebrewPending.challengerName} te desafiou</div>
-                    <div className="text-sm font-bold text-white mt-0.5">Beba antes do duelo</div>
-                    <div className="text-xs text-gray-500">{multiplier > 1 ? `(${multiplier}x ativo)` : 'pré-duelo obrigatório'}</div>
+                    <div className="text-xs text-gray-400 leading-none">{t.salaLayout.duelChallengedBy(duelPrebrewPending.challengerName)}</div>
+                    <div className="text-sm font-bold text-white mt-0.5">{t.salaLayout.drinkBeforeDuel}</div>
+                    <div className="text-xs text-gray-500">{multiplier > 1 ? t.common.multiplierNote(multiplier) : t.salaLayout.preDuelMandatory}</div>
                   </div>
                   <button
                     onClick={() => {
                       const d = duelPrebrewPending.drinks;
                       game.addDrinks(d);
-                      root.showToast(`⚔️ +${d}🍺 (pré-duelo)`);
-                      log.addEntry({ emoji: '⚔️', message: `Desafio de ${duelPrebrewPending.challengerName} — bebeu ${d} gole${d !== 1 ? 's' : ''} (pré-duelo)`, playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'room' });
+                      root.showToast(t.salaLayout.preDuelToast(d));
+                      log.addEntry({ emoji: '⚔️', message: t.salaLayout.preDuelLog(duelPrebrewPending.challengerName, d), playerName: game.state.character?.name ?? 'Você', playerColor: game.state.character?.color ?? '#6366f1', source: 'room' });
                       setDuelPrebrewPending(null);
                     }}
                     className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold text-white active:scale-95 transition-transform bg-red-700">
-                    Bebi! ✓
+                    {t.salaLayout.drinkConfirm}
                   </button>
                 </div>
               )}
@@ -355,7 +356,7 @@ export function SalaLayout() {
       {room.isReconnecting && (
         <div className="fixed inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center gap-3">
           <div className="text-3xl animate-spin">🔄</div>
-          <div className="text-white font-semibold">Reconectando à sala...</div>
+          <div className="text-white font-semibold">{t.salaLayout.reconnecting}</div>
         </div>
       )}
 
@@ -372,18 +373,18 @@ function PrebrewCard({ prebrew, drinks, multiplier, onConfirm }: {
       <div className="shrink-0 text-center">
         <div className="text-3xl">🍺</div>
         <div className="text-2xl font-black text-white leading-none mt-1">{drinks}</div>
-        <div className="text-[10px] text-gray-400">gole{drinks !== 1 ? 's' : ''}</div>
+        <div className="text-[10px] text-gray-400">{t.common.goles(drinks)}</div>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-xs text-gray-400 leading-none">{prebrew.hostName} · Turno {prebrew.turn}</div>
-        <div className="text-sm font-bold text-white mt-0.5">Beba antes do minigame</div>
+        <div className="text-xs text-gray-400 leading-none">{t.salaLayout.prebrewHostLine(prebrew.hostName, prebrew.turn)}</div>
+        <div className="text-sm font-bold text-white mt-0.5">{t.salaLayout.drinkBeforeMinigame}</div>
         <div className="text-xs text-gray-500">
-          {multiplier > 1 ? `(${multiplier}x ativo)` : 'pré-jogo obrigatório'}
+          {multiplier > 1 ? t.common.multiplierNote(multiplier) : t.salaLayout.prebrewMandatory}
         </div>
       </div>
       <button onClick={onConfirm}
         className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold text-white active:scale-95 transition-transform bg-yellow-600">
-        Bebi! ✓
+        {t.salaLayout.drinkConfirm}
       </button>
     </div>
   );
@@ -393,23 +394,23 @@ function ResultCard({ result, loserDrinks, onConfirm }: {
   result: ResultState; loserDrinks: number; onConfirm: (lost: boolean) => void;
 }) {
   const formatLabel = result.format
-    ? (FORMATS[result.format] ?? result.format.toUpperCase())
-    : 'Aguardando formato...';
+    ? (t.salaLayout.formatLabels[result.format] ?? result.format.toUpperCase())
+    : t.salaLayout.waitingFormat;
 
   return (
     <div className="px-5 py-4 space-y-3">
       <div>
-        <div className="text-xs text-gray-400">🎮 Minigame — Turno {result.turn}</div>
+        <div className="text-xs text-gray-400">{t.salaLayout.minigameTurn(result.turn)}</div>
         <div className="text-sm font-bold text-white mt-0.5">{formatLabel}</div>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <button onClick={() => onConfirm(false)}
           className="py-3 rounded-2xl text-sm font-bold border-2 border-green-500/50 bg-green-900/20 text-green-400 active:scale-95 transition-transform">
-          🏆 Ganhei
+          {t.common.won}
         </button>
         <button onClick={() => onConfirm(true)}
           className="py-3 rounded-2xl text-sm font-bold border-2 border-red-500/50 bg-red-900/20 text-red-400 active:scale-95 transition-transform">
-          😅 Perdi +{loserDrinks}
+          {t.common.lost(loserDrinks)}
         </button>
       </div>
     </div>

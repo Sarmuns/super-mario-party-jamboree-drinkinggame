@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '../lib/labels';
 
 interface StarEvent {
   emoji: string;
@@ -8,11 +9,13 @@ interface StarEvent {
   starDelta: number;
 }
 
-const starEvents: StarEvent[] = [
-  { emoji: '⭐', label: 'Comprei estrela',  description: 'Comprou a estrela por 20 moedas', base: 2, starDelta:  1 },
-  { emoji: '💀', label: 'Estrela roubada',  description: 'Boo, Bowser, Chance Time...',     base: 3, starDelta: -1 },
-  { emoji: '😭', label: 'Passei sem grana', description: 'Sem as 20 moedas na hora certa', base: 4, starDelta:  0 },
-];
+const starEvents: StarEvent[] = t.starsSection.events.map((ev, i) => ({
+  emoji: ['⭐', '💀', '😭'][i],
+  label: ev.label,
+  description: ev.description,
+  base: [2, 3, 4][i],
+  starDelta: [1, -1, 0][i],
+}));
 
 interface Props {
   multiplier: number;
@@ -35,14 +38,14 @@ export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onA
     if (pending.starDelta !== 0) onStarChange(pending.starDelta);
 
     const starNote = pending.starDelta > 0 ? ' ⭐+1' : pending.starDelta < 0 ? ' ⭐-1' : '';
-    showToast(`${pending.emoji} ${pending.label}: 🍺 ${count} gole${count !== 1 ? 's' : ''}${starNote}`);
-    onActivity?.(pending.emoji, `${pending.label} — bebeu ${count} gole${count !== 1 ? 's' : ''}${starNote}`);
+    showToast(`${pending.emoji} ${pending.label}: 🍺 ${count} ${t.common.goles(count)}${starNote}`);
+    onActivity?.(pending.emoji, `${pending.label} — bebeu ${count} ${t.common.goles(count)}${starNote}`);
     setPending(null);
   }
 
   return (
     <section className="px-4 py-4">
-      <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>Estrelas</h2>
+      <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--accent)' }}>{t.starsSection.title}</h2>
       <div className="flex flex-col gap-2">
         {starEvents.map(ev => {
           const count = ev.base * multiplier;
@@ -56,14 +59,13 @@ export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onA
               </div>
               <div className="shrink-0 text-right">
                 <div className="text-lg font-bold text-white">{count}</div>
-                <div className="text-xs text-gray-400">gole{count !== 1 ? 's' : ''}</div>
+                <div className="text-xs text-gray-400">{t.common.goles(count)}</div>
               </div>
             </button>
           );
         })}
       </div>
 
-      {/* Boo e Duelo */}
       {(onShowBoo || onShowDuel) && (
         <div className="grid grid-cols-2 gap-2 mt-2">
           {onShowBoo && (
@@ -71,8 +73,8 @@ export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onA
               className="flex items-center gap-2 px-3 py-3 rounded-2xl bg-gray-800 border border-gray-700 active:scale-[0.98] transition-transform">
               <span className="text-xl shrink-0">👻</span>
               <div className="text-left min-w-0">
-                <div className="text-xs font-bold text-white leading-tight">Boo</div>
-                <div className="text-[10px] text-gray-400 leading-tight">roubou estrela/grana</div>
+                <div className="text-xs font-bold text-white leading-tight">{t.starsSection.boo}</div>
+                <div className="text-[10px] text-gray-400 leading-tight">{t.starsSection.booSubtitle}</div>
               </div>
             </button>
           )}
@@ -81,15 +83,14 @@ export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onA
               className="flex items-center gap-2 px-3 py-3 rounded-2xl bg-gray-800 border border-gray-700 active:scale-[0.98] transition-transform">
               <span className="text-xl shrink-0">⚔️</span>
               <div className="text-left min-w-0">
-                <div className="text-xs font-bold text-white leading-tight">Duelo</div>
-                <div className="text-[10px] text-gray-400 leading-tight">1v1 com outro jogador</div>
+                <div className="text-xs font-bold text-white leading-tight">{t.starsSection.duel}</div>
+                <div className="text-[10px] text-gray-400 leading-tight">{t.starsSection.duelSubtitle}</div>
               </div>
             </button>
           )}
         </div>
       )}
 
-      {/* Modal de confirmação */}
       {pending && (
         <>
           <div className="fixed inset-0 z-40 bg-black/70" onClick={() => setPending(null)} />
@@ -102,7 +103,6 @@ export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onA
               </div>
 
               <div className="px-5 pb-6 pt-3 space-y-4">
-                {/* Header */}
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-4xl shrink-0 bg-gray-700">
                     {pending.emoji}
@@ -113,16 +113,15 @@ export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onA
                   </div>
                 </div>
 
-                {/* Consequências */}
                 <div className="rounded-2xl bg-gray-700/50 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">🍺</span>
-                      <span className="text-sm font-bold text-white">Você bebe</span>
+                      <span className="text-sm font-bold text-white">{t.starsSection.youDrink}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span className="text-2xl font-black text-white">{pending.base * multiplier}</span>
-                      <span className="text-xs text-gray-400">goles</span>
+                      <span className="text-xs text-gray-400">{t.starsSection.goles}</span>
                       {multiplier > 1 && (
                         <span className="text-xs text-red-400 bg-red-900/40 px-1 py-0.5 rounded-full font-bold ml-1">{multiplier}x</span>
                       )}
@@ -132,7 +131,7 @@ export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onA
                     <div className="flex items-center justify-between pt-2 border-t border-gray-600">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">⭐</span>
-                        <span className="text-sm text-gray-300">Estrelas</span>
+                        <span className="text-sm text-gray-300">{t.starsSection.starsLabel}</span>
                       </div>
                       <span className={`text-sm font-bold ${pending.starDelta > 0 ? 'text-yellow-400' : 'text-red-400'}`}>
                         {pending.starDelta > 0 ? '+1' : '-1'}
@@ -141,16 +140,15 @@ export function StarsSection({ multiplier, onDrink, onStarChange, showToast, onA
                   )}
                 </div>
 
-                {/* Botões */}
                 <div className="flex gap-3">
                   <button onClick={() => setPending(null)}
                     className="flex-1 py-3 rounded-2xl text-sm font-semibold text-gray-400 bg-gray-700 active:scale-95 transition-transform">
-                    Cancelar
+                    {t.common.cancel}
                   </button>
                   <button onClick={confirm}
                     className="flex-1 py-3 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform"
                     style={{ backgroundColor: 'var(--accent)' }}>
-                    Confirmar ✓
+                    {t.common.confirm}
                   </button>
                 </div>
               </div>

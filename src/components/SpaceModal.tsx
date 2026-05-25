@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Space, RoomEvent } from '../types';
 import { ImageWithFallback } from './ImageWithFallback';
+import { t } from '../lib/labels';
 
 const SPACE_EMOJI: Record<string, string> = {
   blue: '🔵', red: '🔴', lucky: '🍀', unlucky: '💜',
@@ -126,21 +127,21 @@ export function SpaceModal({
             <div className="px-5 pb-6 pt-4 space-y-4">
               <div className="text-center">
                 <div className="text-3xl mb-2">🎲</div>
-                <div className="text-lg font-bold text-white">Chance Time</div>
+                <div className="text-lg font-bold text-white">{t.spaceModal.chanceTimeCard}</div>
                 <div className="text-sm text-gray-400 mt-1">{conditional?.condition}</div>
               </div>
               <div className="rounded-2xl bg-gray-700/50 px-4 py-3 text-center">
-                <div className="text-sm text-gray-300">Você saiu prejudicado na troca?</div>
-                <div className="text-xs text-gray-500 mt-1">Se sim, bebe mais {extraDrinks} gole{extraDrinks !== 1 ? 's' : ''}</div>
+                <div className="text-sm text-gray-300">{t.spaceModal.chanceTimeQuestion}</div>
+                <div className="text-xs text-gray-500 mt-1">{t.spaceModal.chanceTimeYesNote(extraDrinks)}</div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <button onClick={() => handlePrejudicado(true)}
                   className="py-4 rounded-2xl text-sm font-bold border-2 border-red-500/60 bg-red-900/20 text-red-400 active:scale-95 transition-transform">
-                  😖 Sim +{extraDrinks}
+                  {t.spaceModal.chanceTimeYes(extraDrinks)}
                 </button>
                 <button onClick={() => handlePrejudicado(false)}
                   className="py-4 rounded-2xl text-sm font-bold border-2 border-green-500/60 bg-green-900/20 text-green-400 active:scale-95 transition-transform">
-                  😊 Saí bem
+                  {t.spaceModal.chanceTimeNo}
                 </button>
               </div>
             </div>
@@ -182,14 +183,14 @@ export function SpaceModal({
 
             {/* Efeito no jogo */}
             <div>
-              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Efeito no jogo</div>
+              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t.spaceModal.effectLabel}</div>
               <div className="text-sm text-gray-300">{space.effect_in_game}</div>
             </div>
 
             {/* Regra */}
             <div className="rounded-2xl p-4" style={{ backgroundColor: `${space.color}20`, border: `1px solid ${space.color}50` }}>
               <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: space.color }}>
-                Regra do Drinking Game
+                {t.spaceModal.ruleLabel}
               </div>
               <div className="text-base font-semibold text-white">{space.drinking_rule}</div>
             </div>
@@ -197,15 +198,15 @@ export function SpaceModal({
             {/* Consequências */}
             {!isSpecialRule && (
               <div className="rounded-2xl bg-gray-700/50 p-4 space-y-3">
-                <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">Consequências</div>
+                <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">{t.spaceModal.consequencesLabel}</div>
 
                 {selfDrinks > 0 && (
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🍺</span>
-                    <div className="flex-1 text-sm font-bold text-white">Você bebe</div>
+                    <div className="flex-1 text-sm font-bold text-white">{t.spaceModal.youDrink}</div>
                     <div className="text-right">
                       <span className="text-2xl font-black text-white">{selfDrinks}</span>
-                      <span className="text-xs text-gray-400 ml-1">gole{selfDrinks !== 1 ? 's' : ''}</span>
+                      <span className="text-xs text-gray-400 ml-1">{t.common.goles(selfDrinks)}</span>
                       {multiplier > 1 && <span className="ml-1 text-xs text-red-400 bg-red-900/40 px-1 py-0.5 rounded-full font-bold">{multiplier}x</span>}
                     </div>
                   </div>
@@ -214,7 +215,7 @@ export function SpaceModal({
                 {selfDrinks === 0 && !space.drinks_all && (
                   <div className="flex items-center gap-3">
                     <span className="text-xl">✅</span>
-                    <div className="text-sm text-gray-400">Você não bebe</div>
+                    <div className="text-sm text-gray-400">{t.spaceModal.youDontDrink}</div>
                   </div>
                 )}
 
@@ -223,21 +224,21 @@ export function SpaceModal({
                     <span className="text-xl">👥</span>
                     <div className="flex-1">
                       <div className="text-sm font-bold text-white">
-                        {space.drinks_all ? 'Todo mundo bebe' : 'Os outros bebem'}
+                        {space.drinks_all ? t.spaceModal.everyoneDrinks : t.spaceModal.othersDrink}
                       </div>
-                      {notifiesOthers && <div className="text-xs text-yellow-400">🔔 Modal aparece no celular deles</div>}
+                      {notifiesOthers && <div className="text-xs text-yellow-400">{t.spaceModal.notifyOthers}</div>}
                     </div>
                     <div className="text-right">
                       <span className="text-2xl font-black text-white">{othersDrinks}</span>
-                      <span className="text-xs text-gray-400 ml-1">gole{othersDrinks !== 1 ? 's' : ''}</span>
+                      <span className="text-xs text-gray-400 ml-1">{t.common.goles(othersDrinks)}</span>
                     </div>
                   </div>
                 )}
 
                 {conditionalIsNumeric && (
                   <div className="pt-2 border-t border-gray-600 text-xs text-yellow-400">
-                    + {conditional!.condition}: {(conditional!.drinks as number) * multiplier} goles extras
-                    {space.id === 'chance_time' ? ' (perguntará depois)' : ''}
+                    + {conditional!.condition}: {(conditional!.drinks as number) * multiplier} {t.spaceModal.extraDrinksUnit}
+                    {space.id === 'chance_time' ? ` ${t.spaceModal.extraDrinksNote}` : ''}
                   </div>
                 )}
               </div>
@@ -246,8 +247,8 @@ export function SpaceModal({
             {/* VS Space */}
             {isSpecialRule && (
               <div className="rounded-2xl bg-gray-700/50 p-4 space-y-2">
-                <div className="text-sm text-white font-semibold">Minigame VS!</div>
-                <div className="text-xs text-gray-400">Todo mundo bebe 1 antes de jogar. Perdedor bebe +1.</div>
+                <div className="text-sm text-white font-semibold">{t.spaceModal.vsMinigame}</div>
+                <div className="text-xs text-gray-400">{t.spaceModal.vsMinigameRule}</div>
               </div>
             )}
 
@@ -257,7 +258,7 @@ export function SpaceModal({
               {hasShield && selfDrinks > 0 && (
                 <button onClick={handleShield}
                   className="w-full py-4 rounded-2xl text-base font-bold text-yellow-400 border-2 border-yellow-500/60 bg-yellow-500/10 active:scale-95 transition-transform">
-                  Usar escudo 🛡️ — {notifiesOthers && othersDrinks > 0 ? 'Pulei, mas notifico os outros' : 'Dose pulada!'}
+                  {notifiesOthers && othersDrinks > 0 ? t.spaceModal.shieldSkipOthers : t.spaceModal.shieldSkipSelf}
                 </button>
               )}
 
@@ -267,12 +268,12 @@ export function SpaceModal({
                   className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
                   style={{ backgroundColor: selfDrinks > 0 || hasCollectiveEffect ? space.color : '#374151' }}>
                   {selfDrinks > 0 && notifiesOthers
-                    ? `Beber ${selfDrinks} — modal aparece nos outros 🔔`
+                    ? t.spaceModal.drinkWithNotify(selfDrinks)
                     : selfDrinks > 0
-                    ? `Beber! 🍺 (${selfDrinks} gole${selfDrinks !== 1 ? 's' : ''})`
+                    ? t.spaceModal.drinkConfirm(selfDrinks)
                     : notifiesOthers
-                    ? 'Confirmar — modal aparece nos outros 🔔'
-                    : '✅ Confirmar — registrar no log'}
+                    ? t.spaceModal.confirmWithNotify
+                    : t.spaceModal.confirmLog}
                 </button>
               )}
 
@@ -280,13 +281,13 @@ export function SpaceModal({
               {isSpecialRule && (
                 <button
                   onClick={() => {
-                    onLogLocal?.(spaceEmoji, 'Casa VS — minigame iniciado!');
+                    onLogLocal?.(spaceEmoji, t.spaceModal.vsMinigameLog);
                     onTriggerMinigame?.();
                     onClose();
                   }}
                   className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
                   style={{ backgroundColor: space.color }}>
-                  🎮 Iniciar Minigame VS
+                  {t.spaceModal.startVsMinigame}
                 </button>
               )}
             </div>

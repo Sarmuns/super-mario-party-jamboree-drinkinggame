@@ -20,3 +20,10 @@ export function resolveIcon(characterId: string, fallback?: string): string {
 export function resolveCharacter(characterId: string): Character | undefined {
   return characters.find(c => c.id === characterId);
 }
+
+/** Retorna "Apelido (Personagem)" se nickname foi definido, senão só o nome do personagem. */
+export function playerDisplayName(player: { name: string; characterId: string }): string {
+  const char = resolveCharacter(player.characterId);
+  if (!char || player.name === char.name) return player.name;
+  return `${player.name} (${char.name})`;
+}
