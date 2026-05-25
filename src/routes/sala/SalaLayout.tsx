@@ -120,7 +120,6 @@ export function SalaLayout() {
       const isStar = incomingEvent.booType !== 'coin';
       game.addDrinks(drinks);
       if (isStar) game.addStars(-1);
-      const starNote = isStar ? ' -1⭐' : '';
       root.showToast(t.salaLayout.booToast(incomingEvent.fromPlayerName, drinks, isStar));
       log.addEntry({
         emoji: '👻',
