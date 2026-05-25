@@ -49,6 +49,7 @@ export function SpaceModal({
   const selfDrinks = selfBase * multiplier;
   const othersDrinks = (space.drinks_others ?? 0) * multiplier;
   const isSpecialRule = typeof space.drinks === 'string';
+  const choice = space.drinks_choice;
   const conditional = space.drinks_conditional;
   const conditionalIsNumeric = typeof conditional?.drinks === 'number';
   const hasCollectiveEffect = isCollective(space);
@@ -73,6 +74,36 @@ export function SpaceModal({
       message: `${characterName} caiu na ${space.name_pt}!`,
       drinks: typeof othersBase === 'number' ? othersBase : 1,
     });
+  }
+
+  function fireBroadcastOthers(amount: number) {
+    if (!onBroadcast || !characterName) return;
+    onBroadcast({
+      type: 'drinks_others',
+      fromPlayerId: roomPlayerId ?? '',
+      fromPlayerName: characterName,
+      characterColor: space.color,
+      message: `${characterName} caiu na ${space.name_pt}!`,
+      drinks: amount,
+    });
+  }
+
+  function handleChoiceSelf() {
+    const drinks = choice!.drinks_self * multiplier;
+    onDrink(drinks);
+    onActivity?.(spaceEmoji, t.spaceModal.choiceYouLog(space.name_pt, drinks));
+    onClose();
+  }
+
+  function handleChoiceOthers() {
+    const drinks = choice!.drinks_others * multiplier;
+    if (isRoomMode && onBroadcast) {
+      fireBroadcastOthers(drinks);
+      onLogLocal?.(spaceEmoji, t.spaceModal.choiceOthersLog(space.name_pt));
+    } else {
+      onActivity?.(spaceEmoji, t.spaceModal.choiceOthersLog(space.name_pt));
+    }
+    onClose();
   }
 
   function handleConfirm() {
@@ -195,8 +226,27 @@ export function SpaceModal({
               <div className="text-base font-semibold text-white">{space.drinking_rule}</div>
             </div>
 
-            {/* Consequências */}
-            {!isSpecialRule && (
+            {/* Consequências — casas com choice (Event, Item) */}
+            {choice && (
+              <div className="rounded-2xl bg-gray-700/50 p-4 space-y-2">
+                <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">{t.spaceModal.consequencesLabel}</div>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="rounded-xl bg-gray-800/60 px-3 py-2 text-center">
+                    <div className="text-xs text-gray-400 mb-1">{choice.self_label}</div>
+                    <div className="text-sm font-bold text-white">🍺 {t.common.goles(choice.drinks_self * multiplier)}</div>
+                    {multiplier > 1 && <div className="text-[10px] text-red-400 mt-0.5">{multiplier}x</div>}
+                  </div>
+                  <div className="rounded-xl bg-gray-800/60 px-3 py-2 text-center">
+                    <div className="text-xs text-gray-400 mb-1">{choice.others_label}</div>
+                    <div className="text-sm font-bold text-white">👥 {t.common.goles(choice.drinks_others * multiplier)}</div>
+                    {isRoomMode && <div className="text-[10px] text-yellow-400 mt-0.5">🔔 {t.spaceModal.choiceNotifies}</div>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Consequências — casas normais */}
+            {!isSpecialRule && !choice && (
               <div className="rounded-2xl bg-gray-700/50 p-4 space-y-3">
                 <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">{t.spaceModal.consequencesLabel}</div>
 
@@ -255,15 +305,31 @@ export function SpaceModal({
             {/* Botões */}
             <div className="flex flex-col gap-3">
               {/* Escudo */}
-              {hasShield && selfDrinks > 0 && (
+              {hasShield && selfDrinks > 0 && !choice && (
                 <button onClick={handleShield}
                   className="w-full py-4 rounded-2xl text-base font-bold text-yellow-400 border-2 border-yellow-500/60 bg-yellow-500/10 active:scale-95 transition-transform">
                   {notifiesOthers && othersDrinks > 0 ? t.spaceModal.shieldSkipOthers : t.spaceModal.shieldSkipSelf}
                 </button>
               )}
 
-              {/* Confirmar — para todas as casas não-VS */}
-              {!isSpecialRule && (
+              {/* Choice — Event Space / Item Space */}
+              {choice && (
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={handleChoiceSelf}
+                    className="py-4 rounded-2xl text-sm font-bold border-2 active:scale-95 transition-transform"
+                    style={{ borderColor: `${space.color}80`, backgroundColor: `${space.color}20`, color: space.color }}>
+                    {t.spaceModal.choiceYouDrink(choice.drinks_self * multiplier)}
+                  </button>
+                  <button onClick={handleChoiceOthers}
+                    className="py-4 rounded-2xl text-sm font-bold text-white active:scale-95 transition-transform"
+                    style={{ backgroundColor: space.color }}>
+                    {t.spaceModal.choiceOthersDrink(choice.drinks_others * multiplier)}
+                  </button>
+                </div>
+              )}
+
+              {/* Confirmar — para casas normais não-VS */}
+              {!isSpecialRule && !choice && (
                 <button onClick={handleConfirm}
                   className="w-full py-4 rounded-2xl text-base font-bold text-white active:scale-95 transition-transform"
                   style={{ backgroundColor: selfDrinks > 0 || hasCollectiveEffect ? space.color : '#374151' }}>

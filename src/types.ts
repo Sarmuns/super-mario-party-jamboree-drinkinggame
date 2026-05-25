@@ -24,6 +24,13 @@ export interface Space {
     condition: string;
     drinks: number | string;
   };
+  drinks_choice?: {
+    question: string;
+    self_label: string;
+    others_label: string;
+    drinks_self: number;
+    drinks_others: number;
+  };
 }
 
 export interface GameState {

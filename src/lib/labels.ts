@@ -136,6 +136,11 @@ const pt = {
     startVsMinigame: '🎮 Iniciar Minigame VS',
     vsMinigameLog: 'Casa VS — minigame iniciado!',
     extraDrinksUnit: 'goles extras',
+    choiceYouDrink: (drinks: number) => `🍺 Você bebe ${drinks}`,
+    choiceOthersDrink: (drinks: number) => `👥 Outros bebem ${drinks}`,
+    choiceYouLog: (spaceName: string, drinks: number) => `${spaceName} — bebeu ${drinks} ${g(drinks)}`,
+    choiceOthersLog: (spaceName: string) => `${spaceName} — os outros bebem 1`,
+    choiceNotifies: 'notifica',
   },
 
   spacesSection: {

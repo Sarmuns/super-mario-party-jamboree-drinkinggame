@@ -59,8 +59,15 @@
       "icon_url": "/assets/casas/64px-SMPJ_Event_Space.png",
       "sprite_url": "/assets/casas/64px-SMPJ_Event_Space.png",
       "effect_in_game": "Dispara evento exclusivo do tabuleiro (varia por board)",
-      "drinking_rule": "Evento disparou? 1 gole — o caos tem preço.",
-      "drinks": 1
+      "drinking_rule": "Evento te prejudicou? Você bebe 1. Evento foi bom pra você? Outros bebem 1.",
+      "drinks": 0,
+      "drinks_choice": {
+        "question": "Como o evento te afetou?",
+        "self_label": "Me prejudicou",
+        "others_label": "Foi bom pra mim",
+        "drinks_self": 1,
+        "drinks_others": 1
+      }
     },
     {
       "id": "item",
@@ -69,12 +76,15 @@
       "color": "#888780",
       "icon_url": "/assets/casas/64px-SMPJ_Item_Space.png",
       "sprite_url": "/assets/casas/64px-SMPJ_Item_Space.png",
-      "effect_in_game": "Minigame de item ou roleta pra ganhar item",
-      "drinking_rule": "Item bom? Nada. Caiu Loadstone? 1 gole.",
+      "effect_in_game": "Minigame de item — itens pra você: Dado (Cog/Duplo/Custom/Sombrio), Warp Box, Cano Dourado, Compra por Celular, Bolsa. Itens pra outros/cenário: Cano, Chave Esqueleto, Chamada do Chomp, Armadilha, Espelho de Troca, Sino do Boo.",
+      "drinking_rule": "Item pra você mesmo? Você bebe 1. Item pra prejudicar outros ou o cenário? Outros bebem 1.",
       "drinks": 0,
-      "drinks_conditional": {
-        "condition": "Recebeu Loadstone",
-        "drinks": 1
+      "drinks_choice": {
+        "question": "Que tipo de item você pegou?",
+        "self_label": "Pra mim mesmo",
+        "others_label": "Pra outros / cenário",
+        "drinks_self": 1,
+        "drinks_others": 1
       }
     },
     {
